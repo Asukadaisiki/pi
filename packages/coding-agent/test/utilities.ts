@@ -10,6 +10,8 @@ import { Agent } from "@earendil-works/pi-agent-core";
 import type { OAuthCredentials } from "@earendil-works/pi-ai";
 import { getModel, streamSimple } from "@earendil-works/pi-ai/compat";
 import { builtinProviders } from "@earendil-works/pi-ai/providers/all";
+import { ANTHROPIC_MODELS } from "@earendil-works/pi-ai/providers/anthropic.models";
+import { createConfiguredProvider, loadConfiguredProviderFile } from "@earendil-works/pi-ai/providers/configured";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { createEventBus } from "../src/core/event-bus.ts";
@@ -50,6 +52,25 @@ type AuthCredential = ApiKeyCredential | OAuthCredentialEntry;
 
 type AuthStorageData = Record<string, AuthCredential>;
 
+function findOAuthProvider(providerId: string) {
+	if (providerId !== "anthropic") return builtinProviders().find((candidate) => candidate.id === providerId);
+
+	const config = loadConfiguredProviderFile({
+		providers: {
+			anthropic: {
+				name: "Claude",
+				vendor: "claude",
+				protocol: "anthropic-messages",
+				baseUrl: "https://api.anthropic.com",
+				auth: { type: "api-key", env: ["ANTHROPIC_API_KEY"] },
+				modelCatalog: "anthropic",
+			},
+		},
+	});
+	const providerConfig = config.providers.get("anthropic");
+	return providerConfig ? createConfiguredProvider(providerConfig, Object.values(ANTHROPIC_MODELS)) : undefined;
+}
+
 function loadAuthStorage(): AuthStorageData {
 	if (!existsSync(AUTH_PATH)) {
 		return {};
@@ -89,7 +110,7 @@ export async function resolveApiKey(provider: string): Promise<string | undefine
 	}
 
 	if (entry.type === "oauth") {
-		const oauth = builtinProviders().find((candidate) => candidate.id === provider)?.auth.oauth;
+		const oauth = findOAuthProvider(provider)?.auth.oauth;
 		if (!oauth) return undefined;
 		let credential = entry;
 		if (Date.now() >= credential.expires) {

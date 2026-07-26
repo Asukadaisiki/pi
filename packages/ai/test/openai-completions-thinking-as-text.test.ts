@@ -32,8 +32,6 @@ const compat = {
 	requiresThinkingAsText: true,
 	requiresReasoningContentOnAssistantMessages: false,
 	thinkingFormat: "openai",
-	openRouterRouting: {},
-	vercelGatewayRouting: {},
 	chatTemplateKwargs: {},
 	zaiToolStream: false,
 	supportsStrictMode: true,

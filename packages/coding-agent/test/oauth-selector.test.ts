@@ -36,8 +36,8 @@ describe("OAuthSelectorComponent", () => {
 				},
 			},
 			{
-				id: "google-vertex",
-				name: "Google Vertex AI",
+				id: "openai",
+				name: "OpenAI",
 				auth: { apiKey: { name: "Google Cloud credentials" } },
 			},
 		];
@@ -60,7 +60,7 @@ describe("OAuthSelectorComponent", () => {
 				method: { name: "Anthropic API key" },
 			},
 			{
-				id: "google-vertex",
+				id: "openai",
 				name: "Google Vertex AI",
 				authType: "api_key",
 				method: { name: "Google Cloud credentials" },
@@ -74,7 +74,7 @@ describe("OAuthSelectorComponent", () => {
 	it("renders an option without compiled auth status as unconfigured", () => {
 		const selector = new OAuthSelectorComponent(
 			"login",
-			[{ id: "google", name: "Google", authType: "api_key", status: undefined }],
+			[{ id: "openai", name: "OpenAI", authType: "api_key", status: undefined }],
 			() => {},
 			() => {},
 		);

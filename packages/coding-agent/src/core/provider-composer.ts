@@ -84,7 +84,7 @@ function mergeCompat(
 	const baseNested = base as Record<string, unknown> | undefined;
 	const overrideNested = override as Record<string, unknown>;
 	const mergedNested = merged as Record<string, unknown>;
-	for (const key of ["openRouterRouting", "vercelGatewayRouting", "chatTemplateKwargs"] as const) {
+	for (const key of ["chatTemplateKwargs"] as const) {
 		const baseValue = baseNested?.[key];
 		const overrideValue = overrideNested[key];
 		if (
@@ -164,9 +164,6 @@ function applyModelsJson(
 	config: ModelsJsonProvider | undefined,
 ): Model<Api>[] {
 	if (!config) return [...baseModels];
-	if (config.oauth && !config.baseUrl) {
-		throw new Error(`Provider ${providerId}: "baseUrl" is required when "oauth" is set.`);
-	}
 	const hasOverrides = config.modelOverrides && Object.keys(config.modelOverrides).length > 0;
 	if (
 		!config.models?.length &&
@@ -175,7 +172,6 @@ function applyModelsJson(
 		!config.compat &&
 		!hasOverrides &&
 		!config.apiKey &&
-		!config.oauth &&
 		config.authHeader === undefined
 	) {
 		throw new Error(
@@ -185,7 +181,7 @@ function applyModelsJson(
 
 	const models: Model<Api>[] = baseModels.map((model) => ({
 		...model,
-		baseUrl: config.oauth === "radius" ? model.baseUrl : (config.baseUrl ?? model.baseUrl),
+		baseUrl: config.baseUrl ?? model.baseUrl,
 		compat: mergeCompat(model.compat, config.compat),
 	}));
 	for (const definition of config.models ?? []) {

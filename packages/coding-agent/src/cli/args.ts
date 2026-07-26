@@ -235,7 +235,7 @@ ${chalk.bold("Commands:")}
   ${APP_NAME} <command> --help          Show help for install/remove/uninstall/update/list/config
 
 ${chalk.bold("Options:")}
-  --provider <name>              Provider name (default: google)
+  --provider <name>              Provider name (default: config.json default)
   --model <pattern>              Model pattern or ID (supports "provider/id" and optional ":<thinking>")
   --api-key <key>                API key (defaults to env vars)
   --system-prompt <text>         System prompt (default: coding assistant prompt)
@@ -314,7 +314,7 @@ ${chalk.bold("Examples:")}
   ${APP_NAME} --models claude-sonnet,claude-haiku,gpt-4o
 
   # Limit to a specific provider with glob pattern
-  ${APP_NAME} --models "github-copilot/*"
+  ${APP_NAME} --models "openai/*"
 
   # Cycle models with fixed thinking levels
   ${APP_NAME} --models sonnet:high,haiku:low

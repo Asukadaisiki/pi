@@ -1,7 +1,7 @@
 // Unit tests for the shared provider error-body normalizer.
 //
 // See issues/provider-error-body-passthrough. These cover one synthesized error
-// object per SDK shape (Mistral, openai APIError, @google/genai ApiError, AWS
+// object per SDK shape and the OpenAI APIError
 // Bedrock ServiceException), plus the non-Error fallback, truncation, the empty
 // parsed-body edge case, and the formatProviderError compose helper.
 
@@ -37,7 +37,7 @@ describe("normalizeProviderError", () => {
 		expect(norm.messageCarriesBody).toBe(false);
 	});
 
-	it("preserves the message when @google/genai already folds the body into it", () => {
+	it("preserves the message when an SDK already folds the body into it", () => {
 		const body = { error: { code: 403, message: "Permission denied" } };
 		const error = Object.assign(new Error(JSON.stringify(body)), {
 			status: 403,

@@ -38,7 +38,6 @@ import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 
 import { resolveJsonSchemaStrictSampling } from "./constrained-sampling.ts";
-import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.ts";
 import { adjustMaxTokensForThinking, buildBaseOptions, clampMaxTokensToContext } from "./simple-options.ts";
 import { transformMessages } from "./transform-messages.ts";
 
@@ -521,15 +520,6 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				const apiKey = options?.apiKey;
 				assertRequestAuth(model.provider, apiKey, options?.headers);
 
-				let copilotDynamicHeaders: Record<string, string> | undefined;
-				if (model.provider === "github-copilot") {
-					const hasImages = hasCopilotVisionInput(context.messages);
-					copilotDynamicHeaders = buildCopilotDynamicHeaders({
-						messages: context.messages,
-						hasImages,
-					});
-				}
-
 				const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
 				const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
 
@@ -539,7 +529,6 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					options?.interleavedThinking ?? true,
 					shouldUseFineGrainedToolStreamingBeta(model, context),
 					options?.headers,
-					copilotDynamicHeaders,
 					cacheSessionId,
 				);
 				client = created.client;
@@ -845,7 +834,6 @@ function createClient(
 	interleavedThinking: boolean,
 	useFineGrainedToolStreamingBeta: boolean,
 	optionsHeaders?: ProviderHeaders,
-	dynamicHeaders?: Record<string, string>,
 	sessionId?: string,
 ): { client: Anthropic; isOAuthToken: boolean } {
 	// Adaptive thinking models have interleaved thinking built in, so skip the beta header.
@@ -856,28 +844,6 @@ function createClient(
 	}
 	if (needsInterleavedBeta) {
 		betaFeatures.push(INTERLEAVED_THINKING_BETA);
-	}
-
-	// Copilot: Bearer auth, selective betas.
-	if (model.provider === "github-copilot") {
-		const client = new Anthropic({
-			apiKey: null,
-			authToken: apiKey ?? null,
-			baseURL: model.baseUrl,
-			dangerouslyAllowBrowser: true,
-			defaultHeaders: mergeHeaders(
-				{
-					accept: "application/json",
-					"anthropic-dangerous-direct-browser-access": "true",
-					...(betaFeatures.length > 0 ? { "anthropic-beta": betaFeatures.join(",") } : {}),
-				},
-				model.headers,
-				dynamicHeaders,
-				optionsHeaders,
-			),
-		});
-
-		return { client, isOAuthToken: false };
 	}
 
 	// OAuth: Bearer auth, Claude Code identity headers

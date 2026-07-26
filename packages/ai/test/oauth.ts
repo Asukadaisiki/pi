@@ -10,6 +10,8 @@ import { homedir } from "os";
 import { dirname, join } from "path";
 import type { OAuthCredentials } from "../src/auth/types.ts";
 import { builtinProviders } from "../src/providers/all.ts";
+import { ANTHROPIC_MODELS } from "../src/providers/anthropic.models.ts";
+import { createConfiguredProvider, loadConfiguredProviderFile } from "../src/providers/configured.ts";
 
 const AUTH_PATH = join(homedir(), ".pi", "agent", "auth.json");
 
@@ -25,6 +27,25 @@ type OAuthCredentialEntry = {
 type AuthCredential = ApiKeyCredential | OAuthCredentialEntry;
 
 type AuthStorage = Record<string, AuthCredential>;
+
+function findOAuthProvider(providerId: string) {
+	if (providerId !== "anthropic") return builtinProviders().find((candidate) => candidate.id === providerId);
+
+	const config = loadConfiguredProviderFile({
+		providers: {
+			anthropic: {
+				name: "Claude",
+				vendor: "claude",
+				protocol: "anthropic-messages",
+				baseUrl: "https://api.anthropic.com",
+				auth: { type: "api-key", env: ["ANTHROPIC_API_KEY"] },
+				modelCatalog: "anthropic",
+			},
+		},
+	});
+	const providerConfig = config.providers.get("anthropic");
+	return providerConfig ? createConfiguredProvider(providerConfig, Object.values(ANTHROPIC_MODELS)) : undefined;
+}
 
 function loadAuthStorage(): AuthStorage {
 	if (!existsSync(AUTH_PATH)) {
@@ -65,7 +86,7 @@ export async function resolveApiKey(provider: string): Promise<string | undefine
 	}
 
 	if (entry.type === "oauth") {
-		const oauth = builtinProviders().find((candidate) => candidate.id === provider)?.auth.oauth;
+		const oauth = findOAuthProvider(provider)?.auth.oauth;
 		if (!oauth) return undefined;
 		let credential = entry;
 		try {

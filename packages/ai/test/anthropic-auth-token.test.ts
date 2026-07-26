@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { stream as streamAnthropic } from "../src/api/anthropic-messages.ts";
 import { ANTHROPIC_AUTH_TOKEN_ENV, ANTHROPIC_OAUTH_TOKEN_ENV } from "../src/env-api-keys.ts";
 import { createModels } from "../src/models.ts";
-import { anthropicProvider } from "../src/providers/anthropic.ts";
+import { ANTHROPIC_MODELS } from "../src/providers/anthropic.models.ts";
+import { createConfiguredProvider, loadConfiguredProviderFile } from "../src/providers/configured.ts";
 import type { Context, Model } from "../src/types.ts";
 
 const mockState = vi.hoisted(() => ({
@@ -69,6 +70,26 @@ const anthropicModel: Model<"anthropic-messages"> = {
 	maxTokens: 4096,
 };
 
+function configuredAnthropicProvider() {
+	const config = loadConfiguredProviderFile({
+		providers: {
+			anthropic: {
+				name: "Claude",
+				vendor: "claude",
+				protocol: "anthropic-messages",
+				baseUrl: "https://api.anthropic.com",
+				auth: {
+					type: "api-key",
+					env: ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
+					bearerEnv: ["ANTHROPIC_AUTH_TOKEN"],
+				},
+				modelCatalog: "anthropic",
+			},
+		},
+	});
+	return createConfiguredProvider(config.providers.get("anthropic")!, Object.values(ANTHROPIC_MODELS));
+}
+
 afterEach(() => {
 	mockState.constructorOpts = undefined;
 	mockState.createParams = undefined;
@@ -76,7 +97,7 @@ afterEach(() => {
 
 describe("Anthropic auth token env", () => {
 	it("resolves ANTHROPIC_AUTH_TOKEN as a bearer Authorization header", async () => {
-		const provider = anthropicProvider();
+		const provider = configuredAnthropicProvider();
 		const auth = await provider.auth.apiKey?.resolve({
 			ctx: {
 				env: async (name) =>
@@ -96,7 +117,7 @@ describe("Anthropic auth token env", () => {
 	});
 
 	it("preserves ANTHROPIC_OAUTH_TOKEN as OAuth-shaped API auth", async () => {
-		const provider = anthropicProvider();
+		const provider = configuredAnthropicProvider();
 		const auth = await provider.auth.apiKey?.resolve({
 			ctx: {
 				env: async (name) =>
@@ -135,7 +156,7 @@ describe("Anthropic auth token env", () => {
 				fileExists: async () => false,
 			},
 		});
-		models.setProvider(anthropicProvider());
+		models.setProvider(configuredAnthropicProvider());
 
 		await models.streamSimple(anthropicModel, context).result();
 
@@ -154,7 +175,7 @@ describe("Anthropic auth token env", () => {
 				fileExists: async () => false,
 			},
 		});
-		models.setProvider(anthropicProvider());
+		models.setProvider(configuredAnthropicProvider());
 
 		await models.streamSimple(anthropicModel, context).result();
 
@@ -171,7 +192,7 @@ describe("Anthropic auth token env", () => {
 				fileExists: async () => false,
 			},
 		});
-		models.setProvider(anthropicProvider());
+		models.setProvider(configuredAnthropicProvider());
 
 		await models
 			.streamSimple(anthropicModel, context, { headers: { Authorization: "Bearer explicit-token" } })
