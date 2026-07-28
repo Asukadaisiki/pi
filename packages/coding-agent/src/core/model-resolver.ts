@@ -12,44 +12,11 @@ import type { ModelRuntime } from "./model-runtime.ts";
 
 /** Default model IDs for each known provider */
 export const defaultModelPerProvider: Record<KnownProvider, string> = {
-	"amazon-bedrock": "us.anthropic.claude-opus-4-6-v1",
-	"ant-ling": "Ring-2.6-1T",
 	anthropic: "claude-opus-4-8",
 	openai: "gpt-5.5",
-	"azure-openai-responses": "gpt-5.4",
-	"openai-codex": "gpt-5.5",
-	radius: "auto",
-	nvidia: "nvidia/nemotron-3-super-120b-a12b",
-	deepseek: "deepseek-v4-pro",
-	google: "gemini-3.1-pro-preview",
-	"google-vertex": "gemini-3.1-pro-preview",
-	"github-copilot": "gpt-5.4",
-	openrouter: "moonshotai/kimi-k2.6",
-	"vercel-ai-gateway": "zai/glm-5.1",
-	xai: "grok-4.5",
-	groq: "openai/gpt-oss-120b",
-	cerebras: "zai-glm-4.7",
-	zai: "glm-5.1",
-	"zai-coding-cn": "glm-5.1",
-	mistral: "devstral-medium-latest",
-	minimax: "MiniMax-M2.7",
-	"minimax-cn": "MiniMax-M2.7",
+	deepseek: "deepseek-v4-flash",
 	moonshotai: "kimi-k2.6",
-	"moonshotai-cn": "kimi-k2.6",
-	huggingface: "moonshotai/Kimi-K2.6",
-	fireworks: "accounts/fireworks/models/kimi-k2p6",
-	together: "moonshotai/Kimi-K2.6",
-	opencode: "kimi-k2.6",
-	"opencode-go": "kimi-k2.6",
-	"kimi-coding": "kimi-for-coding",
-	"cloudflare-workers-ai": "@cf/moonshotai/kimi-k2.6",
-	"cloudflare-ai-gateway": "workers-ai/@cf/moonshotai/kimi-k2.6",
-	"qwen-token-plan": "qwen3.7-max",
-	"qwen-token-plan-cn": "qwen3.7-max",
-	xiaomi: "mimo-v2.5-pro",
-	"xiaomi-token-plan-cn": "mimo-v2.5-pro",
-	"xiaomi-token-plan-ams": "mimo-v2.5-pro",
-	"xiaomi-token-plan-sgp": "mimo-v2.5-pro",
+	zai: "glm-5.1",
 };
 
 export interface ScopedModel {
@@ -161,22 +128,6 @@ export interface ParsedModelResult {
 	/** Thinking level if explicitly specified in pattern, undefined otherwise */
 	thinkingLevel?: ThinkingLevel;
 	warning: string | undefined;
-}
-
-function buildFallbackModel(provider: string, modelId: string, availableModels: Model<Api>[]): Model<Api> | undefined {
-	const providerModels = availableModels.filter((m) => m.provider === provider);
-	if (providerModels.length === 0) return undefined;
-
-	const defaultId = defaultModelPerProvider[provider as KnownProvider];
-	const baseModel = defaultId
-		? (providerModels.find((m) => m.id === defaultId) ?? providerModels[0])
-		: providerModels[0];
-
-	return {
-		...baseModel,
-		id: modelId,
-		name: modelId,
-	};
 }
 
 /**
@@ -388,7 +339,7 @@ export function resolveCliModel(options: {
 	cliThinking?: ThinkingLevel;
 	modelRuntime: ModelRuntime;
 }): ResolveCliModelResult {
-	const { cliProvider, cliModel, cliThinking, modelRuntime } = options;
+	const { cliProvider, cliModel, modelRuntime } = options;
 
 	if (!cliModel) {
 		return { model: undefined, warning: undefined, error: undefined };
@@ -423,11 +374,8 @@ export function resolveCliModel(options: {
 	// If no explicit --provider, try to interpret "provider/model" format first.
 	// When the prefix before the first slash matches a known provider, prefer that
 	// interpretation over matching models whose IDs literally contain slashes
-	// (e.g. "zai/glm-5" should resolve to provider=zai, model=glm-5, not to a
-	// vercel-ai-gateway model with id "zai/glm-5").
+	// (e.g. "zai/glm-5" should resolve to provider=zai, model=glm-5).
 	let pattern = cliModel;
-	let inferredProvider = false;
-
 	if (!provider) {
 		const slashIndex = cliModel.indexOf("/");
 		if (slashIndex !== -1) {
@@ -436,13 +384,12 @@ export function resolveCliModel(options: {
 			if (canonical) {
 				provider = canonical;
 				pattern = cliModel.substring(slashIndex + 1);
-				inferredProvider = true;
 			}
 		}
 	}
 
 	// If no provider was inferred from the slash, try exact matches without provider inference.
-	// This handles models whose IDs naturally contain slashes (e.g. OpenRouter-style IDs).
+	// This handles custom model IDs whose IDs naturally contain slashes.
 	if (!provider) {
 		const lower = cliModel.toLowerCase();
 		const exact = availableModels.find(
@@ -467,83 +414,7 @@ export function resolveCliModel(options: {
 	});
 
 	if (model) {
-		// If provider inference matched an unauthenticated provider/model pair, prefer
-		// one exact raw model-id match that is authenticated. This keeps
-		// "provider/model" syntax preferred when usable, but handles models whose
-		// literal id starts with a known provider name (for example
-		// commandcode model id "xiaomi/mimo-v2.5-pro").
-		if (inferredProvider) {
-			const rawExactMatches = availableModels.filter(
-				(m) => m.id.toLowerCase() === cliModel.toLowerCase() && !modelsAreEqual(m, model),
-			);
-			if (rawExactMatches.length > 0 && !modelRuntime.hasConfiguredAuth(model.provider)) {
-				const authenticatedRawMatches = rawExactMatches.filter((m) => modelRuntime.hasConfiguredAuth(m.provider));
-				if (authenticatedRawMatches.length === 1) {
-					return {
-						model: authenticatedRawMatches[0],
-						thinkingLevel: undefined,
-						warning: undefined,
-						error: undefined,
-					};
-				}
-			}
-		}
 		return { model, thinkingLevel, warning, error: undefined };
-	}
-
-	// If we inferred a provider from the slash but found no match within that provider,
-	// fall back to matching the full input as a raw model id across all models.
-	// This handles OpenRouter-style IDs like "openai/gpt-4o:extended" where "openai"
-	// looks like a provider but the full string is actually a model id on openrouter.
-	if (inferredProvider) {
-		const lower = cliModel.toLowerCase();
-		const exact = availableModels.find(
-			(m) => m.id.toLowerCase() === lower || `${m.provider}/${m.id}`.toLowerCase() === lower,
-		);
-		if (exact) {
-			return { model: exact, warning: undefined, thinkingLevel: undefined, error: undefined };
-		}
-		// Also try parseModelPattern on the full input against all models
-		const fallback = parseModelPattern(cliModel, availableModels, {
-			allowInvalidThinkingLevelFallback: false,
-		});
-		if (fallback.model) {
-			return {
-				model: fallback.model,
-				thinkingLevel: fallback.thinkingLevel,
-				warning: fallback.warning,
-				error: undefined,
-			};
-		}
-	}
-
-	if (provider) {
-		// Parse thinking level suffix from the pattern before building the fallback model,
-		// but only when --thinking is not explicitly provided.
-		// e.g. "zai-org/GLM-5.1-FP8:high" → modelId="zai-org/GLM-5.1-FP8", fallbackThinking="high"
-		let fallbackPattern = pattern;
-		let fallbackThinking: ThinkingLevel | undefined;
-		if (!cliThinking) {
-			const lastColon = pattern.lastIndexOf(":");
-			if (lastColon !== -1) {
-				const suffix = pattern.substring(lastColon + 1);
-				if (isValidThinkingLevel(suffix)) {
-					fallbackPattern = pattern.substring(0, lastColon);
-					fallbackThinking = suffix;
-				}
-			}
-		}
-
-		const fallbackModel = buildFallbackModel(provider, fallbackPattern, availableModels);
-		if (fallbackModel) {
-			const requestedThinking = cliThinking ?? fallbackThinking;
-			const model =
-				requestedThinking && requestedThinking !== "off" ? { ...fallbackModel, reasoning: true } : fallbackModel;
-			const fallbackWarning = warning
-				? `${warning} Model "${fallbackPattern}" not found for provider "${provider}". Using custom model id.`
-				: `Model "${fallbackPattern}" not found for provider "${provider}". Using custom model id.`;
-			return { model, thinkingLevel: fallbackThinking, warning: fallbackWarning, error: undefined };
-		}
 	}
 
 	const display = provider ? `${provider}/${pattern}` : cliModel;
@@ -627,6 +498,19 @@ export async function findInitialModel(options: {
 				thinkingLevel = defaultThinkingLevel;
 			}
 			return { model, thinkingLevel, fallbackMessage: undefined };
+		}
+	}
+
+	// The user-owned config.json supplies the default when settings.json has no explicit choice.
+	const configuredDefault = modelRuntime.getDefaultModelReference?.();
+	if (configuredDefault && (!defaultProvider || !defaultModelId)) {
+		const found = modelRuntime.getModel(configuredDefault.provider, configuredDefault.model);
+		if (found && modelRuntime.hasConfiguredAuth(found.provider)) {
+			return {
+				model: found,
+				thinkingLevel: configuredDefault.thinking ?? defaultThinkingLevel ?? DEFAULT_THINKING_LEVEL,
+				fallbackMessage: undefined,
+			};
 		}
 	}
 

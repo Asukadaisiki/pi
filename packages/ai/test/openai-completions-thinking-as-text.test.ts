@@ -32,8 +32,6 @@ const compat = {
 	requiresThinkingAsText: true,
 	requiresReasoningContentOnAssistantMessages: false,
 	thinkingFormat: "openai",
-	openRouterRouting: {},
-	vercelGatewayRouting: {},
 	chatTemplateKwargs: {},
 	zaiToolStream: false,
 	supportsStrictMode: true,
@@ -47,13 +45,14 @@ const compat = {
 	deferredToolsMode?: OpenAICompletionsCompat["deferredToolsMode"];
 };
 
-function buildModel(baseUrl = "http://127.0.0.1:1"): Model<"openai-completions"> {
+function buildModel(baseUrl = "http://127.0.0.1:1", url?: string): Model<"openai-completions"> {
 	return {
 		id: "repro-model",
 		name: "Repro Model",
 		api: "openai-completions",
 		provider: "repro-provider",
 		baseUrl,
+		...(url ? { url } : {}),
 		reasoning: true,
 		input: ["text"],
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -211,6 +210,50 @@ describe("openai-completions thinking-as-text replay", () => {
 
 			const terminalEvent = events.at(-1);
 			expect(terminalEvent?.type).toBe("done");
+		} finally {
+			server.close();
+			await once(server, "close");
+		}
+	});
+
+	it("uses an exact configured URL without appending the SDK path", async () => {
+		const requestedUrls: string[] = [];
+		const server = http.createServer((req, res) => {
+			requestedUrls.push(req.url ?? "");
+			if (req.method !== "POST" || req.url !== "/configured-endpoint") {
+				res.writeHead(404).end();
+				return;
+			}
+
+			res.writeHead(200, { "content-type": "text/event-stream" });
+			res.write(
+				`data: ${JSON.stringify({
+					id: "chatcmpl-exact-url",
+					object: "chat.completion.chunk",
+					created: 0,
+					model: "repro-model",
+					choices: [{ index: 0, delta: { content: "ok" }, finish_reason: "stop" }],
+				})}\n\n`,
+			);
+			res.write("data: [DONE]\n\n");
+			res.end();
+		});
+
+		server.listen(0, "127.0.0.1");
+		await once(server, "listening");
+
+		try {
+			const { port } = server.address() as AddressInfo;
+			const events = await collectEvents(
+				streamOpenAICompletions(
+					buildModel(`http://127.0.0.1:${port}/base-url`, `http://127.0.0.1:${port}/configured-endpoint`),
+					{ messages: [{ role: "user", content: "hello", timestamp: 1 }] },
+					{ apiKey: "test-key" },
+				),
+			);
+
+			expect(requestedUrls).toEqual(["/configured-endpoint"]);
+			expect(events.at(-1)?.type).toBe("done");
 		} finally {
 			server.close();
 			await once(server, "close");

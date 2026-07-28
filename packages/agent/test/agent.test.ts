@@ -1,4 +1,9 @@
-import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@earendil-works/pi-ai/compat";
+import {
+	type AssistantMessage,
+	type AssistantMessageEvent,
+	EventStream,
+	type Model,
+} from "@earendil-works/pi-ai/compat";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import {
@@ -81,6 +86,19 @@ function createDeferred(): {
 	return { promise, resolve };
 }
 
+const testModel = {
+	id: "test-model",
+	name: "Test model",
+	api: "openai-responses",
+	provider: "openai",
+	baseUrl: "https://example.com/v1",
+	reasoning: false,
+	input: ["text"],
+	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+	contextWindow: 4096,
+	maxTokens: 1024,
+} satisfies Model<"openai-responses">;
+
 describe("Agent", () => {
 	it("uses the configured default when a legacy caller omits streamFn", async () => {
 		let calls = 0;
@@ -119,18 +137,17 @@ describe("Agent", () => {
 	});
 
 	it("should create an agent instance with custom initial state", () => {
-		const customModel = getModel("openai", "gpt-4o-mini");
 		const agent = new Agent({
 			streamFn: unusedStreamFunction,
 			initialState: {
 				systemPrompt: "You are a helpful assistant.",
-				model: customModel,
+				model: testModel,
 				thinkingLevel: "low",
 			},
 		});
 
 		expect(agent.state.systemPrompt).toBe("You are a helpful assistant.");
-		expect(agent.state.model).toBe(customModel);
+		expect(agent.state.model).toBe(testModel);
 		expect(agent.state.thinkingLevel).toBe("low");
 	});
 
@@ -447,7 +464,7 @@ describe("Agent", () => {
 		expect(agent.state.systemPrompt).toBe("Custom prompt");
 
 		// Test setModel
-		const newModel = getModel("google", "gemini-2.5-flash");
+		const newModel = testModel;
 		agent.state.model = newModel;
 		expect(agent.state.model).toBe(newModel);
 

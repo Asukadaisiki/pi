@@ -44,7 +44,7 @@ import {
 	resolveConfiguredModelHeaders,
 	validateExtensionProvider,
 } from "./provider-composer.ts";
-import { withRemoteCatalog } from "./remote-catalog-provider.ts";
+import { loadUserProviderConfig, type UserProviderConfig } from "./provider-config.ts";
 import { RuntimeCredentials } from "./runtime-credentials.ts";
 
 interface ModelRuntimeSnapshot {
@@ -60,13 +60,13 @@ export interface CreateModelRuntimeOptions {
 	credentials?: CredentialStore;
 	authPath?: string;
 	modelsPath?: string | null;
+	providerConfigPath?: string | null;
 	modelsStore?: ModelsStore;
 	modelsStorePath?: string;
 	/** Allow create() to refresh model catalogs over the network. Defaults to false. */
 	allowModelNetwork?: boolean;
 	/** Timeout for the create-time network model refresh. */
 	modelRefreshTimeoutMs?: number;
-	catalogBaseUrl?: string;
 }
 
 export interface ModelRuntimeAuthOverrides {
@@ -90,18 +90,25 @@ function mergeHeaders(
 	return merged;
 }
 
+function createBuiltinProviders(providerConfig: UserProviderConfig): readonly Provider[] {
+	return builtinProviderCatalog.builtinProviders(providerConfig.file.providers);
+}
+
 /** Configured pi-ai Models collection used by coding-agent and SDK consumers. */
 export class ModelRuntime implements Models {
 	private readonly models: MutableModels;
 	private readonly credentials: RuntimeCredentials;
-	private readonly defaultBuiltins: ReadonlyMap<string, Provider>;
+	private readonly defaultBuiltins = new Map<string, Provider>();
 	private readonly builtins = new Map<string, Provider>();
 	private readonly nativeExtensionProviders = new Map<string, Provider>();
 	private readonly extensionProviders = new Map<string, ProviderConfigInput>();
 	private readonly compositionErrors = new Map<string, string>();
 	private readonly modelsPath: string | undefined;
+	private readonly providerConfigPath: string | null | undefined;
 	private readonly modelNetworkEnabled: boolean;
 	private config: ModelConfig;
+	private providerConfigError: string | undefined;
+	private providerConfigDefault: UserProviderConfig["file"]["default"];
 	private snapshot: ModelRuntimeSnapshot = {
 		all: [],
 		available: [],
@@ -116,15 +123,20 @@ export class ModelRuntime implements Models {
 		credentials: RuntimeCredentials,
 		config: ModelConfig,
 		modelsPath: string | undefined,
+		providerConfigPath: string | null | undefined,
 		modelsStore: ModelsStore,
 		providers: readonly Provider[],
+		providerConfig: UserProviderConfig,
 		modelNetworkEnabled: boolean,
 	) {
 		this.credentials = credentials;
 		this.config = config;
 		this.modelsPath = modelsPath;
+		this.providerConfigPath = providerConfigPath;
+		this.providerConfigError = providerConfig.error;
+		this.providerConfigDefault = providerConfig.file.default;
 		this.modelNetworkEnabled = modelNetworkEnabled;
-		this.defaultBuiltins = new Map(providers.map((provider) => [provider.id, provider]));
+		for (const provider of providers) this.defaultBuiltins.set(provider.id, provider);
 		for (const [providerId, provider] of this.defaultBuiltins) this.builtins.set(providerId, provider);
 		this.models = createModels({ credentials, modelsStore });
 		this.rebuildProviders();
@@ -134,29 +146,31 @@ export class ModelRuntime implements Models {
 		const credentials = new RuntimeCredentials(options.credentials ?? DefaultAuthStorage.create(options.authPath));
 		const modelsPath =
 			options.modelsPath === null ? undefined : (options.modelsPath ?? join(getAgentDir(), "models.json"));
+		const providerConfigPath =
+			options.providerConfigPath === null
+				? null
+				: (options.providerConfigPath ??
+					(options.modelsPath && modelsPath
+						? join(dirname(modelsPath), "config.json")
+						: join(getAgentDir(), "config.json")));
 		const config = await ModelConfig.load(modelsPath);
+		const providerConfig = await loadUserProviderConfig(providerConfigPath);
 		const modelsStore =
 			options.modelsStore ??
 			(modelsPath
 				? new FileModelsStore(options.modelsStorePath ?? join(dirname(modelsPath), "models-store.json"))
 				: new InMemoryCodingAgentModelsStore());
-		const builtinModelDataGeneratedAt = builtinProviderCatalog.getBuiltinModelDataGeneratedAt();
-		const providers = builtinProviderCatalog
-			.builtinProviders()
-			.map((provider) =>
-				provider.id === "radius"
-					? provider
-					: withRemoteCatalog(provider, options.catalogBaseUrl, builtinModelDataGeneratedAt),
-			);
+		const providers = createBuiltinProviders(providerConfig);
 		const runtime = new ModelRuntime(
 			credentials,
 			config,
 			modelsPath,
+			providerConfigPath,
 			modelsStore,
 			providers,
+			providerConfig,
 			process.env.PI_OFFLINE === undefined,
 		);
-		runtime.configureRadiusProviders();
 		runtime.rebuildProviders();
 		const refreshFromNetwork = runtime.modelNetworkEnabled && options.allowModelNetwork === true;
 		const controller = refreshFromNetwork ? new AbortController() : undefined;
@@ -169,23 +183,6 @@ export class ModelRuntime implements Models {
 			if (timeout) clearTimeout(timeout);
 		}
 		return runtime;
-	}
-
-	private configureRadiusProviders(): void {
-		this.builtins.clear();
-		for (const [providerId, provider] of this.defaultBuiltins) this.builtins.set(providerId, provider);
-		for (const providerId of this.config.getProviderIds()) {
-			const config = this.config.getProvider(providerId);
-			if (config?.oauth !== "radius" || !config.baseUrl) continue;
-			this.builtins.set(
-				providerId,
-				builtinProviderCatalog.radiusProvider({
-					id: providerId,
-					name: config.name ?? providerId,
-					gateway: config.baseUrl.replace(/\/v1\/?$/u, ""),
-				}),
-			);
-		}
 	}
 
 	private providerIds(): Set<string> {
@@ -335,11 +332,16 @@ export class ModelRuntime implements Models {
 		const errors: string[] = [];
 		const configError = this.config.getError();
 		if (configError) errors.push(configError);
+		if (this.providerConfigError) errors.push(this.providerConfigError);
 		for (const [providerId, error] of this.compositionErrors) {
 			errors.push(`Provider "${providerId}": ${error}`);
 		}
 		if (this.availabilityError) errors.push(`Availability refresh: ${this.availabilityError}`);
 		return errors.length > 0 ? errors.join("\n\n") : undefined;
+	}
+
+	getDefaultModelReference(): UserProviderConfig["file"]["default"] {
+		return this.providerConfigDefault;
 	}
 
 	getRegisteredProviderConfig(providerId: string): ProviderConfigInput | undefined {
@@ -515,7 +517,12 @@ export class ModelRuntime implements Models {
 
 	async refresh(options: ModelsRefreshOptions = {}): Promise<ModelsRefreshResult> {
 		this.config = await ModelConfig.load(this.modelsPath);
-		this.configureRadiusProviders();
+		const providerConfig = await loadUserProviderConfig(this.providerConfigPath);
+		this.providerConfigError = providerConfig.error;
+		this.providerConfigDefault = providerConfig.file.default;
+		const providers = createBuiltinProviders(providerConfig);
+		this.defaultBuiltins.clear();
+		for (const provider of providers) this.defaultBuiltins.set(provider.id, provider);
 		this.rebuildProviders();
 		const refreshOptions = {
 			...options,

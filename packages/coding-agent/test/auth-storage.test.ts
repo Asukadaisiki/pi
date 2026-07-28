@@ -116,16 +116,16 @@ describe("AuthStorage", () => {
 		writeAuthJson({
 			anthropic: { type: "api_key", key: "anthropic-key" },
 			openai: { type: "api_key", key: "openai-key" },
-			google: { type: "api_key", key: "external-key" },
+			deepseek: { type: "api_key", key: "external-key" },
 		});
 		await storage.delete("anthropic");
 		await expect(storage.list()).resolves.toEqual([
 			{ providerId: "openai", type: "api_key" },
-			{ providerId: "google", type: "api_key" },
+			{ providerId: "deepseek", type: "api_key" },
 		]);
 		expect(await storage.read("anthropic")).toBeUndefined();
 		expect(await storage.read("openai")).toEqual({ type: "api_key", key: "openai-key" });
-		expect(await storage.read("google")).toEqual({ type: "api_key", key: "external-key" });
+		expect(await storage.read("deepseek")).toEqual({ type: "api_key", key: "external-key" });
 	});
 
 	test("in-memory storage implements the same credential-store behavior", async () => {

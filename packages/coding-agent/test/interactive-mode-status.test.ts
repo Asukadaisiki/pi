@@ -396,8 +396,8 @@ describe("InteractiveMode.createBaseAutocompleteProvider", () => {
 			}
 		).prototype.createBaseAutocompleteProvider;
 		const models = [
-			{ id: "gpt-5.2-codex", provider: "github-copilot", name: "GPT-5.2 Codex" },
-			{ id: "gpt-5.5", provider: "openai-codex", name: "GPT-5.5" },
+			{ id: "deepseek-v4-flash", provider: "deepseek", name: "DeepSeek V4 Flash" },
+			{ id: "gpt-5.5", provider: "openai", name: "GPT-5.5" },
 		];
 		const fakeThis: FakeInteractiveMode = {
 			session: {
@@ -414,15 +414,12 @@ describe("InteractiveMode.createBaseAutocompleteProvider", () => {
 		};
 
 		const provider = createBaseAutocompleteProvider.call(fakeThis);
-		const line = "/model codexgpt";
+		const line = "/model gpt";
 		const suggestions = await provider.getSuggestions([line], 0, line.length, {
 			signal: new AbortController().signal,
 		});
 
-		expect(suggestions?.items.map((item) => item.value)).toEqual([
-			"openai-codex/gpt-5.5",
-			"github-copilot/gpt-5.2-codex",
-		]);
+		expect(suggestions?.items.map((item) => item.value)).toEqual(["openai/gpt-5.5", "deepseek/deepseek-v4-flash"]);
 	});
 
 	test("matches login command arguments by provider id and name", async () => {

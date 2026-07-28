@@ -68,7 +68,7 @@ export type ModelsSimpleStreamOptions = SimpleStreamOptions & ModelsStreamTransf
  * auth methods, model listing, and stream behavior.
  *
  * `TApi` lets concrete provider factories declare which APIs their models
- * use (e.g. `openaiProvider(): Provider<"openai-responses" | "openai-completions">`),
+ * use (e.g. a configured OpenAI provider using `openai-responses`),
  * giving typed model lists to direct factory users. Inside a `Models`
  * collection providers are held as `Provider<Api>`.
  */

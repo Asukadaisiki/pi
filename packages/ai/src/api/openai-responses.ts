@@ -18,16 +18,16 @@ import type {
 import { splitDeferredTools } from "../utils/deferred-tools.ts";
 import { formatProviderError, normalizeProviderError } from "../utils/error-body.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
+import { createExactUrlFetch } from "../utils/exact-url-fetch.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { createGrammarToolInputProperties } from "./constrained-sampling.ts";
-import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.ts";
 import { clampOpenAIPromptCacheKey } from "./openai-prompt-cache.ts";
 import { convertResponsesMessages, convertResponsesTools, processResponsesStream } from "./openai-responses-shared.ts";
 import { buildBaseOptions } from "./simple-options.ts";
 
-const OPENAI_TOOL_CALL_PROVIDERS = new Set(["openai", "openai-codex", "opencode"]);
+const OPENAI_TOOL_CALL_PROVIDERS = new Set(["openai"]);
 // OpenAI Responses rejects max_output_tokens below 16: https://github.com/earendil-works/pi/issues/6265
 const OPENAI_RESPONSES_MIN_OUTPUT_TOKENS = 16;
 
@@ -46,8 +46,8 @@ function getClientApiKey(provider: string, apiKey: string | undefined, headers: 
 	throw new Error(`No API key for provider: ${provider}`);
 }
 
-function detectSessionAffinityFormat(model: Pick<Model<"openai-responses">, "provider" | "baseUrl">) {
-	return model.provider === "openrouter" || model.baseUrl.includes("openrouter.ai") ? "openrouter" : "openai";
+function detectSessionAffinityFormat(_model: Pick<Model<"openai-responses">, "provider" | "baseUrl">) {
+	return "openai" as const;
 }
 
 /**
@@ -135,7 +135,7 @@ export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> 
 				context.tools,
 				compat.supportsOpenAIGrammarTools,
 			);
-			const client = createClient(model, context, apiKey, options?.headers, cacheSessionId);
+			const client = createClient(model, apiKey, options?.headers, cacheSessionId);
 			let params = buildParams(model, context, options, compat, grammarToolInputProperties);
 			const nextParams = await options?.onPayload?.(params, model);
 			if (nextParams !== undefined) {
@@ -209,31 +209,18 @@ export const streamSimple: StreamFunction<"openai-responses", SimpleStreamOption
 
 function createClient(
 	model: Model<"openai-responses">,
-	context: Context,
 	apiKey: string,
 	optionsHeaders?: ProviderHeaders,
 	sessionId?: string,
 ) {
 	const compat = getCompat(model);
 	const headers: ProviderHeaders = { ...model.headers };
-	if (model.provider === "github-copilot") {
-		const hasImages = hasCopilotVisionInput(context.messages);
-		const copilotHeaders = buildCopilotDynamicHeaders({
-			messages: context.messages,
-			hasImages,
-		});
-		Object.assign(headers, copilotHeaders);
-	}
 
 	if (sessionId) {
-		if (compat.sessionAffinityFormat === "openrouter") {
-			headers["x-session-id"] = sessionId;
-		} else {
-			if (compat.sessionAffinityFormat === "openai") {
-				headers.session_id = sessionId;
-			}
-			headers["x-client-request-id"] = sessionId;
+		if (compat.sessionAffinityFormat === "openai") {
+			headers.session_id = sessionId;
 		}
+		headers["x-client-request-id"] = sessionId;
 	}
 
 	// Merge options headers last so they can override defaults
@@ -244,6 +231,7 @@ function createClient(
 	return new OpenAI({
 		apiKey,
 		baseURL: model.baseUrl,
+		fetch: model.url ? createExactUrlFetch(model.url) : undefined,
 		dangerouslyAllowBrowser: true,
 		defaultHeaders: headers,
 	});
@@ -314,12 +302,11 @@ function buildParams(
 				summary: options?.reasoningSummary || "auto",
 			};
 			params.include = ["reasoning.encrypted_content"];
-		} else if (model.provider !== "github-copilot" && model.thinkingLevelMap?.off !== null) {
+		} else if (model.thinkingLevelMap?.off !== null) {
 			params.reasoning = {
 				effort: (model.thinkingLevelMap?.off ?? "none") as NonNullable<typeof params.reasoning>["effort"],
 			};
 		}
-		if (model.provider === "xai") params.include = ["reasoning.encrypted_content"];
 	}
 
 	return params;

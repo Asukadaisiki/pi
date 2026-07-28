@@ -1,5 +1,5 @@
-import { createAssistantMessageEventStream, Type } from "@earendil-works/pi-ai";
-import { complete, getModel, getProviders, streamSimple } from "@earendil-works/pi-ai/compat";
+import { createAssistantMessageEventStream, Type, type Model } from "@earendil-works/pi-ai";
+import { complete, getProviders, streamSimple } from "@earendil-works/pi-ai/compat";
 import {
 	Agent,
 	bashExecutionToText,
@@ -20,7 +20,18 @@ import {
 
 // Keep this entry browser-safe. It is bundled by scripts/check-browser-smoke.mjs
 // to catch accidental Node-only runtime imports in browser-facing package exports.
-const model = getModel("google", "gemini-2.5-flash");
+const model = {
+	id: "browser-smoke",
+	name: "Browser smoke model",
+	api: "openai-responses",
+	provider: "openai",
+	baseUrl: "https://example.com/v1",
+	reasoning: false,
+	input: ["text"],
+	cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+	contextWindow: 4096,
+	maxTokens: 1024,
+} satisfies Model<"openai-responses">;
 const schema = Type.Object({ prompt: Type.String() });
 const stream = createAssistantMessageEventStream();
 
