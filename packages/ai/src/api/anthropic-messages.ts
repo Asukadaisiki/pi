@@ -31,6 +31,7 @@ import type {
 } from "../types.ts";
 import { splitDeferredTools } from "../utils/deferred-tools.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
+import { createExactUrlFetch } from "../utils/exact-url-fetch.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { parseJsonWithRepair, parseStreamingJson } from "../utils/json-parse.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
@@ -845,6 +846,7 @@ function createClient(
 	if (needsInterleavedBeta) {
 		betaFeatures.push(INTERLEAVED_THINKING_BETA);
 	}
+	const exactUrlFetch = model.url ? createExactUrlFetch(model.url) : undefined;
 
 	// OAuth: Bearer auth, Claude Code identity headers
 	if (apiKey && isOAuthToken(apiKey)) {
@@ -852,6 +854,7 @@ function createClient(
 			apiKey: null,
 			authToken: apiKey,
 			baseURL: model.baseUrl,
+			fetch: exactUrlFetch,
 			dangerouslyAllowBrowser: true,
 			defaultHeaders: mergeHeaders(
 				{
@@ -886,6 +889,7 @@ function createClient(
 		apiKey: apiKey ?? null,
 		authToken: null,
 		baseURL: model.baseUrl,
+		fetch: exactUrlFetch,
 		dangerouslyAllowBrowser: true,
 		defaultHeaders,
 	});

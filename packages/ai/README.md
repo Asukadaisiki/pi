@@ -26,7 +26,7 @@ C:\\Users\\<用户名>\\.pi\\agent\\config.json
       "name": "DeepSeek",
       "vendor": "deepseek",
       "protocol": "openai-completions",
-      "baseUrl": "https://api.deepseek.com",
+      "url": "https://api.deepseek.com/chat/completions",
       "auth": {
         "type": "api-key",
         "token": "YOUR_API_KEY"
@@ -37,7 +37,7 @@ C:\\Users\\<用户名>\\.pi\\agent\\config.json
 }
 ```
 
-`baseUrl` 是服务根地址。OpenAI Chat Completions 的 endpoint 由请求层在根地址后拼接 `/chat/completions`；Anthropic Messages 和 OpenAI Responses 同理由协议层处理。
+`url` 是完整请求地址。用户配置的地址会被原样使用，不会再由请求层追加 `/chat/completions`、`/messages` 或 `/responses`。
 
 ## 当前支持
 

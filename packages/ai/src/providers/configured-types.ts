@@ -21,7 +21,7 @@ export interface ConfiguredProviderConfig {
 	name: string;
 	vendor: string;
 	protocol: ConfiguredProtocol;
-	baseUrl: string;
+	url: string;
 	auth: ConfiguredAuthConfig;
 	modelCatalog?: string;
 	defaultModel?: string;

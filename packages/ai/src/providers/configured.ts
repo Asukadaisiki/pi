@@ -79,11 +79,11 @@ function parseConfiguration(id: string, value: unknown): ConfiguredProviderConfi
 	if (!(CONFIGURED_PROTOCOLS as readonly string[]).includes(protocol)) {
 		throw new Error(`Configured provider "${id}" has unsupported protocol "${protocol}"`);
 	}
-	const baseUrl = readString(raw, "baseUrl", id);
+	const url = readString(raw, "url", id);
 	try {
-		new URL(baseUrl);
+		new URL(url);
 	} catch {
-		throw new Error(`Configured provider "${id}" has an invalid baseUrl`);
+		throw new Error(`Configured provider "${id}" has an invalid url`);
 	}
 
 	const auth = raw.auth;
@@ -108,7 +108,7 @@ function parseConfiguration(id: string, value: unknown): ConfiguredProviderConfi
 		name,
 		vendor,
 		protocol: protocol as ConfiguredProtocol,
-		baseUrl,
+		url,
 		auth: { type: "api-key", token, env, bearerEnv },
 		modelCatalog,
 		defaultModel,
@@ -193,7 +193,8 @@ function configuredModels(config: ConfiguredProviderConfig, models: readonly Mod
 	return selected.map((model) => ({
 		...model,
 		provider: config.id,
-		baseUrl: config.baseUrl,
+		baseUrl: config.url,
+		url: config.url,
 		headers: model.headers,
 	}));
 }
@@ -246,7 +247,7 @@ export function createConfiguredProvider(config: ConfiguredProviderConfig, model
 	const base = createProvider({
 		id: config.id,
 		name: config.name,
-		baseUrl: config.baseUrl,
+		baseUrl: config.url,
 		headers: config.headers,
 		auth,
 		models: providerModels,

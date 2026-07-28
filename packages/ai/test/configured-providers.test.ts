@@ -39,7 +39,7 @@ describe("configured providers", () => {
 				name: "DeepSeek",
 				vendor: "deepseek",
 				protocol: "openai-completions",
-				baseUrl: "https://api.deepseek.com",
+				url: "https://api.deepseek.com/chat/completions",
 				auth: { type: "api-key", env: ["DEEPSEEK_API_KEY"] },
 				modelCatalog: "deepseek",
 			},
@@ -47,7 +47,7 @@ describe("configured providers", () => {
 				name: "OpenAI",
 				vendor: "openai",
 				protocol: "openai-responses",
-				baseUrl: "https://api.openai.com/v1",
+				url: "https://api.openai.com/v1/responses",
 				auth: { type: "api-key", env: ["OPENAI_API_KEY"] },
 				modelCatalog: "openai",
 				defaultModel: "gpt-5.5",
@@ -56,7 +56,7 @@ describe("configured providers", () => {
 				name: "Claude",
 				vendor: "claude",
 				protocol: "anthropic-messages",
-				baseUrl: "https://api.anthropic.com",
+				url: "https://api.anthropic.com/v1/messages",
 				auth: {
 					type: "api-key",
 					env: ["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
@@ -68,7 +68,7 @@ describe("configured providers", () => {
 				name: "Kimi",
 				vendor: "kimi",
 				protocol: "openai-completions",
-				baseUrl: "https://api.moonshot.ai/v1",
+				url: "https://api.moonshot.ai/v1/chat/completions",
 				auth: { type: "api-key", env: ["MOONSHOT_API_KEY"] },
 				modelCatalog: "moonshotai",
 			},
@@ -76,7 +76,7 @@ describe("configured providers", () => {
 				name: "GLM",
 				vendor: "glm",
 				protocol: "openai-completions",
-				baseUrl: "https://api.z.ai/api/paas/v4",
+				url: "https://api.z.ai/api/paas/v4/chat/completions",
 				auth: { type: "api-key", env: ["ZAI_API_KEY"] },
 				modelCatalog: "zai",
 			},
@@ -94,7 +94,7 @@ describe("configured providers", () => {
 		expect(configFile.default).toEqual({ provider: "openai", model: "gpt-5.5" });
 		expect(configFile.providers.get("openai")).toMatchObject({
 			protocol: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			url: "https://api.openai.com/v1/responses",
 			defaultModel: "gpt-5.5",
 		});
 	});
@@ -106,7 +106,7 @@ describe("configured providers", () => {
 		const model = provider.getModels()[0];
 
 		expect(provider.id).toBe("deepseek");
-		expect(model.baseUrl).toBe("https://api.deepseek.com");
+		expect(model.url).toBe("https://api.deepseek.com/chat/completions");
 
 		const models = createModels({ authContext: fakeAuthContext({ DEEPSEEK_API_KEY: "deepseek-key" }) });
 		models.setProvider(provider);

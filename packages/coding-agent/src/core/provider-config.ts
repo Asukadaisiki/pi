@@ -14,7 +14,7 @@ const DEFAULT_PROVIDER_CONFIG = {
 			name: "OpenAI",
 			vendor: "openai",
 			protocol: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			url: "https://api.openai.com/v1/responses",
 			auth: {
 				type: "api-key",
 				env: ["OPENAI_API_KEY"],

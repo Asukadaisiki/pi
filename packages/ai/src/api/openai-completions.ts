@@ -35,6 +35,7 @@ import type {
 } from "../types.ts";
 import { formatProviderError, normalizeProviderError } from "../utils/error-body.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
+import { createExactUrlFetch } from "../utils/exact-url-fetch.ts";
 import { shortHash } from "../utils/hash.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { parseStreamingJson } from "../utils/json-parse.ts";
@@ -645,6 +646,7 @@ function createClient(
 	return new OpenAI({
 		apiKey,
 		baseURL: model.baseUrl,
+		fetch: model.url ? createExactUrlFetch(model.url) : undefined,
 		dangerouslyAllowBrowser: true,
 		defaultHeaders: headers,
 	});

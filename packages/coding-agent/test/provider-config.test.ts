@@ -14,7 +14,7 @@ describe("user provider config", () => {
 		expect(result.file.providers.get("openai")).toMatchObject({
 			vendor: "openai",
 			protocol: "openai-responses",
-			baseUrl: "https://api.openai.com/v1",
+			url: "https://api.openai.com/v1/responses",
 			defaultModel: "gpt-5.5",
 		});
 	});

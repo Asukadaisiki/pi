@@ -486,6 +486,8 @@ export interface Model<TApi extends Api> {
 	api: TApi;
 	provider: ProviderId;
 	baseUrl: string;
+	/** Exact request URL for configured providers. Protocol adapters do not append a path when set. */
+	url?: string;
 	reasoning: boolean;
 	/**
 	 * Maps pi thinking levels to provider/model-specific values.
