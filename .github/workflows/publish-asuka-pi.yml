@@ -1,6 +1,9 @@
 name: Publish asuka.pi
 
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       ref:
