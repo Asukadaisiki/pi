@@ -1,6 +1,6 @@
 {
-	"name": "@earendil-works/pi-coding-agent",
-	"version": "0.82.1",
+	"name": "asuka.pi",
+	"version": "0.0.1",
 	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
 	"type": "module",
 	"piConfig": {
@@ -36,28 +36,41 @@
 		"copy-binary-assets": "shx cp package.json dist/ && shx cp README.md dist/ && shx cp CHANGELOG.md dist/ && shx mkdir -p dist/theme && shx cp src/modes/interactive/theme/*.json dist/theme/ && shx mkdir -p dist/assets && shx cp src/modes/interactive/assets/*.png dist/assets/ && shx mkdir -p dist/export-html/vendor && shx cp src/core/export-html/template.html dist/export-html/ && shx cp src/core/export-html/vendor/*.js dist/export-html/vendor/ && shx cp -r docs dist/ && shx cp -r examples dist/ && shx cp ../../node_modules/@silvia-odwyer/photon-node/photon_rs_bg.wasm dist/",
 		"test": "vitest --run",
 		"shrinkwrap": "node ../../scripts/generate-coding-agent-shrinkwrap.mjs",
-		"prepublishOnly": "npm run clean && npm run build && npm run shrinkwrap"
+		"prepublishOnly": "npm run clean && npm run build && npm run shrinkwrap && node ../../scripts/prepare-coding-agent-bundle.mjs"
 	},
 	"dependencies": {
+		"@anthropic-ai/sdk": "0.91.1",
 		"@earendil-works/pi-agent-core": "^0.82.1",
 		"@earendil-works/pi-ai": "^0.82.1",
+		"@opentelemetry/api": "1.9.0",
 		"@earendil-works/pi-tui": "^0.82.1",
 		"@silvia-odwyer/photon-node": "0.3.4",
 		"chalk": "5.6.2",
 		"cross-spawn": "7.0.6",
 		"diff": "8.0.4",
+		"get-east-asian-width": "1.6.0",
 		"glob": "13.0.6",
 		"highlight.js": "10.7.3",
 		"hosted-git-info": "9.0.3",
+		"http-proxy-agent": "7.0.2",
+		"https-proxy-agent": "7.0.6",
 		"ignore": "7.0.5",
 		"jiti": "2.7.0",
+		"marked": "18.0.5",
 		"minimatch": "10.2.5",
+		"openai": "6.26.0",
+		"partial-json": "0.1.7",
 		"proper-lockfile": "4.1.2",
 		"semver": "7.8.0",
 		"typebox": "1.1.38",
 		"undici": "8.5.0",
 		"yaml": "2.9.0"
 	},
+	"bundledDependencies": [
+		"@earendil-works/pi-agent-core",
+		"@earendil-works/pi-ai",
+		"@earendil-works/pi-tui"
+	],
 	"overrides": {
 		"protobufjs": "7.6.5",
 		"rimraf": "6.1.2",
@@ -92,7 +105,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/earendil-works/pi.git",
+		"url": "git+https://github.com/Asukadaisiki/pi.git",
 		"directory": "packages/coding-agent"
 	},
 	"engines": {

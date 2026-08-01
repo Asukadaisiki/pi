@@ -12,6 +12,7 @@ const rootLockfilePath = join(repoRoot, "package-lock.json");
 const outputPackageJsonPath = join(outputDir, "package.json");
 const outputLockfilePath = join(outputDir, "package-lock.json");
 const internalPackagePrefix = "@earendil-works/pi-";
+const codingAgentPackageName = "asuka.pi";
 const installPackageName = "@earendil-works/pi-coding-agent-install";
 const allowedInstallScriptPackages = new Map();
 
@@ -124,6 +125,10 @@ function packageNameFromLockPath(lockPath) {
 	return parts[0];
 }
 
+function isInternalPackageName(name) {
+	return name.startsWith(internalPackagePrefix) || name === codingAgentPackageName;
+}
+
 function registryTarballUrl(packageName, version) {
 	const tarballName = packageName.startsWith("@") ? packageName.split("/")[1] : packageName;
 	return `https://registry.npmjs.org/${packageName}/-/${tarballName}-${version}.tgz`;
@@ -140,7 +145,7 @@ function getInternalWorkspaces(lockPackages) {
 		if (!lockPath.startsWith("packages/") || lockPath.includes("/node_modules/") || !entry.name || !entry.version) {
 			continue;
 		}
-		if (!entry.name.startsWith(internalPackagePrefix)) {
+		if (!isInternalPackageName(entry.name)) {
 			continue;
 		}
 
@@ -291,7 +296,7 @@ function validateGeneratedFiles(installerPackageJson, installLock, internalNames
 		if (entry.dev || entry.devOptional || entry.extraneous) {
 			errors.push(`${lockPath || "root"} contains dev/extraneous metadata`);
 		}
-		if (packageName?.startsWith(internalPackagePrefix) && entry.version !== installerPackageJson.version) {
+		if (packageName === codingAgentPackageName && entry.version !== installerPackageJson.version) {
 			errors.push(`${lockPath} internal package version ${entry.version} does not match ${installerPackageJson.version}`);
 		}
 		if (entry.hasInstallScript) {

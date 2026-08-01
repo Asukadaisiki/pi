@@ -1,13 +1,7 @@
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	createAgentSession,
-	DefaultResourceLoader,
-	ModelRuntime,
-	SessionManager,
-	SettingsManager,
-} from "@earendil-works/pi-coding-agent";
+import { createAgentSession, DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager } from "asuka.pi";
 import { createHarness, type SimpleHarnessResult } from "vitest-evals/harness";
 
 type EvalSession = Awaited<ReturnType<typeof createAgentSession>>["session"];

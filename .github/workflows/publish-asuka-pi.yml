@@ -1,0 +1,79 @@
+name: Publish asuka.pi
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build and publish"
+        required: false
+        default: "main"
+        type: string
+
+permissions: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev fd-find ripgrep
+          sudo ln -s "$(which fdfind)" /usr/local/bin/fd
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Check
+        run: npm run check
+
+      - name: Test
+        run: npm test
+
+      - name: Prepare bundled fork packages
+        run: npm run prepare:bundle:coding-agent
+
+      - name: Pack asuka.pi
+        id: pack
+        working-directory: packages/coding-agent
+        shell: bash
+        run: echo "tarball=$(npm pack --ignore-scripts --pack-destination \"$RUNNER_TEMP\")" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke-test packed asuka.pi
+        shell: bash
+        run: |
+          install_dir=$(mktemp -d)
+          cd "$install_dir"
+          npm init -y --ignore-scripts >/dev/null
+          npm install --omit=dev --ignore-scripts "$RUNNER_TEMP/${{ steps.pack.outputs.tarball }}"
+          ./node_modules/.bin/pi --help
+
+      - name: Upgrade npm for trusted publishing
+        run: |
+          npm install -g npm@11.16.0 --ignore-scripts
+          npm --version
+
+      - name: Publish asuka.pi
+        shell: bash
+        run: npm publish "$RUNNER_TEMP/${{ steps.pack.outputs.tarball }}" --access public --provenance --ignore-scripts

@@ -2,6 +2,10 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"outDir": "./dist",
+		"paths": {
+			"asuka.pi": ["../coding-agent/dist/index.d.ts"],
+			"asuka.pi/*": ["../coding-agent/dist/*.d.ts"]
+		},
 		"rootDir": "./src"
 	},
 	"include": ["src/**/*.ts"],

@@ -4,13 +4,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const packages = [
-	{ directory: "packages/ai", name: "@earendil-works/pi-ai" },
-	{ directory: "packages/agent", name: "@earendil-works/pi-agent-core" },
-	{ directory: "packages/storage/sqlite-node", name: "@earendil-works/pi-storage-sqlite-node" },
-	{ directory: "packages/tui", name: "@earendil-works/pi-tui" },
-	{ directory: "packages/coding-agent", name: "@earendil-works/pi-coding-agent" },
-];
+const packages = [{ directory: "packages/coding-agent", name: "asuka.pi" }];
 
 const dryRun = process.argv.includes("--dry-run");
 const unknownArgs = process.argv.slice(2).filter((arg) => arg !== "--dry-run");
@@ -21,7 +15,7 @@ if (unknownArgs.length > 0) {
 }
 
 function commandForPlatform(command) {
-	return process.platform === "win32" ? `${command}.cmd` : command;
+	return process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
 }
 
 function run(command, args, options = {}) {
@@ -29,6 +23,7 @@ function run(command, args, options = {}) {
 	const result = spawnSync(commandForPlatform(command), args, {
 		cwd: options.cwd,
 		encoding: "utf8",
+		shell: process.platform === "win32",
 		stdio: options.capture ? ["inherit", "pipe", "pipe"] : "inherit",
 	});
 
@@ -59,6 +54,7 @@ function validatePack(directory) {
 function isPublished(name, version) {
 	const result = spawnSync(commandForPlatform("npm"), ["view", `${name}@${version}`, "version", "--json"], {
 		encoding: "utf8",
+		shell: process.platform === "win32",
 		stdio: ["inherit", "pipe", "pipe"],
 	});
 
@@ -89,6 +85,8 @@ if (versions.length !== 1) {
 }
 
 console.log(`Publishing pi packages at ${versions[0]}${dryRun ? " (dry run)" : ""}\n`);
+
+run("node", ["scripts/prepare-coding-agent-bundle.mjs"]);
 
 const packageStates = packages.map((pkg) => ({
 	...pkg,
