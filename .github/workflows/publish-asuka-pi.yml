@@ -67,7 +67,11 @@ jobs:
         id: pack
         working-directory: packages/coding-agent
         shell: bash
-        run: echo "tarball=$(npm pack --ignore-scripts --pack-destination \"$RUNNER_TEMP\")" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          tarball="$(npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP")"
+          test -n "$tarball"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
 
       - name: Smoke-test packed asuka.pi
         shell: bash
