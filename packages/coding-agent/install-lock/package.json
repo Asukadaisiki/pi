@@ -1,10 +1,10 @@
 {
 	"name": "@earendil-works/pi-coding-agent-install",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"private": true,
 	"description": "Lockfile root used by the Pi installer and updater.",
 	"dependencies": {
-		"asuka.pi": "0.0.1"
+		"asuka.pi": "0.0.2"
 	},
 	"overrides": {
 		"protobufjs": "7.6.5",

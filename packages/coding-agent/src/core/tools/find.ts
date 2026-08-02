@@ -2,6 +2,7 @@ import { createInterface } from "node:readline";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Text } from "@earendil-works/pi-tui";
 import { spawn } from "child_process";
+import { minimatch } from "minimatch";
 import path from "path";
 import { type Static, Type } from "typebox";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.ts";
@@ -238,17 +239,27 @@ export function createFindToolDefinition(
 							current = parent;
 						}
 						if (!insideGitRepo) args.push("--no-require-git");
-						args.push("--max-results", String(effectiveLimit));
-
 						// fd --glob matches against the basename unless --full-path is set; in --full-path
 						// mode it matches against the absolute candidate path, so a path-containing
 						// pattern like 'src/**/*.spec.ts' needs a leading '**/' to match anything.
 						let effectivePattern = pattern;
+						let postFilterPattern: string | undefined;
 						if (pattern.includes("/")) {
-							args.push("--full-path");
-							if (!pattern.startsWith("/") && !pattern.startsWith("**/") && pattern !== "**") {
-								effectivePattern = `**/${pattern}`;
+							if (process.platform === "win32") {
+								// fd matches --full-path globs against native backslash paths on Windows,
+								// so slash-delimited patterns never match. Let fd apply ignore rules and
+								// filter its normalized relative output with minimatch instead.
+								postFilterPattern = pattern;
+								effectivePattern = "*";
+							} else {
+								args.push("--full-path");
+								if (!pattern.startsWith("/") && !pattern.startsWith("**/") && pattern !== "**") {
+									effectivePattern = `**/${pattern}`;
+								}
 							}
+						}
+						if (!postFilterPattern) {
+							args.push("--max-results", String(effectiveLimit));
 						}
 						args.push("--", effectivePattern, searchPath);
 
@@ -316,7 +327,10 @@ export function createFindToolDefinition(
 									relativePath = path.relative(searchPath, line);
 								}
 								if (hadTrailingSlash && !relativePath.endsWith("/")) relativePath += "/";
-								relativized.push(toPosixPath(relativePath));
+								const normalizedPath = toPosixPath(relativePath);
+								if (postFilterPattern && !minimatch(normalizedPath, postFilterPattern, { dot: true })) continue;
+								relativized.push(normalizedPath);
+								if (postFilterPattern && relativized.length >= effectiveLimit) break;
 							}
 
 							const resultLimitReached = relativized.length >= effectiveLimit;

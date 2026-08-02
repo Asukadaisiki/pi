@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-08-02
+
 ### New Features
 
 - **Native Flow navigation** - Use `/flow <symbol>` to fuzzy-select semantic workspace symbols and open their exact source locations through the VS Code Flow Bridge. See [Flow Symbol Navigation](docs/usage.md#flow-symbol-navigation).
@@ -20,6 +22,8 @@
 
 ### Fixed
 
+- Matched slash-delimited `find` glob patterns against normalized paths on Windows.
+- Made local release test isolation and binary build orchestration work on Windows with Git Bash.
 - Treated configured provider `url` values as complete request endpoints without appending protocol paths.
 - Kept `pi update` self-updates on the published `asuka.pi` package instead of following the upstream Pi package returned by `pi.dev`.
 

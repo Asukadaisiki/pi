@@ -150,7 +150,7 @@ function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
 	}
 	const platform = currentBinaryPlatform();
 	const binaryBuildDirectory = join(archiveDirectory, "binary-build");
-	run("./scripts/build-binaries.sh", [
+	const buildArgs = [
 		"--skip-install",
 		"--skip-deps",
 		"--skip-build",
@@ -158,7 +158,18 @@ function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
 		platform,
 		"--out",
 		binaryBuildDirectory,
-	]);
+	];
+	if (process.platform === "win32") {
+		const drivePath = /^([A-Za-z]):[\\/](.*)$/.exec(binaryBuildDirectory);
+		if (!drivePath) {
+			throw new Error(`Cannot convert Windows release path for Git Bash: ${binaryBuildDirectory}`);
+		}
+		const bashBuildArgs = [...buildArgs];
+		bashBuildArgs[bashBuildArgs.length - 1] = `/${drivePath[1].toLowerCase()}/${drivePath[2].replaceAll("\\", "/")}`;
+		run("bash", ["./scripts/build-binaries.sh", ...bashBuildArgs]);
+	} else {
+		run("./scripts/build-binaries.sh", buildArgs);
+	}
 	rmSync(targetDirectory, { force: true, recursive: true });
 	cpSync(join(binaryBuildDirectory, platform), targetDirectory, { recursive: true });
 	const archiveName = platform.startsWith("windows-") ? `pi-${platform}.zip` : `pi-${platform}.tar.gz`;
@@ -226,7 +237,11 @@ for (const pkg of packages) {
 run("npm", ["run", "prepare:bundle:coding-agent"], { cwd: repoRoot });
 
 if (!options.skipTest) {
-	run("./test.sh", [], { cwd: repoRoot });
+	if (process.platform === "win32") {
+		run("node", ["scripts/run-tests-isolated.mjs"], { cwd: repoRoot });
+	} else {
+		run("./test.sh", [], { cwd: repoRoot });
+	}
 }
 
 const tarballs = new Map();

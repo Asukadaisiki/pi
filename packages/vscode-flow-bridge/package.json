@@ -30,7 +30,7 @@
 		"prepublishOnly": "npm run clean && npm run build"
 	},
 	"dependencies": {
-		"asuka.pi": "0.0.1"
+		"asuka.pi": "0.0.2"
 	},
 	"devDependencies": {
 		"@types/vscode": "1.96.0",
