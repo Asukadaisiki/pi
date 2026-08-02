@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const packages = [{ directory: "packages/coding-agent", name: "asuka.pi" }];
+const maxCapturedOutputBytes = 64 * 1024 * 1024;
 
 const dryRun = process.argv.includes("--dry-run");
 const unknownArgs = process.argv.slice(2).filter((arg) => arg !== "--dry-run");
@@ -23,6 +24,7 @@ function run(command, args, options = {}) {
 	const result = spawnSync(commandForPlatform(command), args, {
 		cwd: options.cwd,
 		encoding: "utf8",
+		maxBuffer: maxCapturedOutputBytes,
 		shell: process.platform === "win32",
 		stdio: options.capture ? ["inherit", "pipe", "pipe"] : "inherit",
 	});
