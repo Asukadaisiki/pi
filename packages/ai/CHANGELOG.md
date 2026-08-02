@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Replaced the broad built-in provider, OAuth, image, and legacy API surface with configuration-driven providers. Consumers must migrate to the supported OpenAI Completions, OpenAI Responses, or Anthropic Messages protocols and provide provider configuration explicitly.
+
+### Added
+
+- Added configured-provider parsing, catalog selection, API-key authentication, and vendor-specific payload validation for OpenAI, Claude, DeepSeek, GLM, and Kimi-compatible services.
+
+### Fixed
+
+- Treated a configured provider's `url` as the complete request endpoint instead of appending an SDK-generated protocol path.
+
 ## [0.82.1] - 2026-07-25
 
 ### Added

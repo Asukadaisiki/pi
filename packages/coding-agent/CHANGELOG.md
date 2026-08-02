@@ -2,12 +2,25 @@
 
 ## [Unreleased]
 
+### New Features
+
+- **Native Flow navigation** - Use `/flow <symbol>` to fuzzy-select semantic workspace symbols and open their exact source locations through the VS Code Flow Bridge. See [Flow Symbol Navigation](docs/usage.md#flow-symbol-navigation).
+- **Configuration-driven providers** - Define providers, authentication, model catalogs, and complete request endpoints in user-owned configuration. See [Configured Providers](../ai/README.md).
+- **Independent `asuka.pi` distribution** - Install the fork from npm and keep it current through the package-aligned `pi update` flow. See [Quick Start](README.md#quick-start) and [Package Commands](docs/usage.md#package-commands).
+
+### Breaking Changes
+
+- Renamed the published coding-agent package and SDK import target to `asuka.pi`; extensions and SDK consumers must update imports from the upstream package name.
+- Replaced the broad built-in provider and OAuth surface with user-owned configured providers in `~/.pi/agent/config.json`.
+
 ### Added
 
 - Added native `/flow <symbol>` semantic symbol selection and exact VS Code source navigation through the local Flow Bridge companion.
+- Added configuration-driven OpenAI Completions, OpenAI Responses, and Anthropic Messages providers with vendor-specific payload validation.
 
 ### Fixed
 
+- Treated configured provider `url` values as complete request endpoints without appending protocol paths.
 - Kept `pi update` self-updates on the published `asuka.pi` package instead of following the upstream Pi package returned by `pi.dev`.
 
 ## [0.82.1] - 2026-07-25
