@@ -14,6 +14,11 @@ on:
         description: 'Source ref to build/publish (defaults to tag; use only for release recovery)'
         required: false
         type: string
+      allow_test_failures:
+        description: 'Continue publishing after test failures accepted for release recovery'
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -260,6 +265,7 @@ jobs:
         run: npm run check
 
       - name: Test
+        continue-on-error: ${{ inputs.allow_test_failures }}
         run: npm test
 
       - name: Upgrade npm for trusted publishing
