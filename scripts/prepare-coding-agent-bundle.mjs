@@ -7,12 +7,14 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
 const codingAgentDir = join(repoRoot, "packages", "coding-agent");
+const shrinkwrapPath = join(codingAgentDir, "npm-shrinkwrap.json");
 
 const bundledPackages = [
 	{ name: "@earendil-works/pi-agent-core", directory: "agent" },
 	{ name: "@earendil-works/pi-ai", directory: "ai" },
 	{ name: "@earendil-works/pi-tui", directory: "tui" },
 ];
+const bundledPackageNames = new Set(bundledPackages.map((pkg) => pkg.name));
 
 function copyRequired(source, target) {
 	if (!existsSync(source)) {
@@ -44,3 +46,20 @@ for (const bundledPackage of bundledPackages) {
 
 	console.log(`Prepared ${bundledPackage.name}@${packageJson.version}`);
 }
+
+const shrinkwrap = JSON.parse(readFileSync(shrinkwrapPath, "utf8"));
+for (const lockPath of Object.keys(shrinkwrap.packages)) {
+	if (!lockPath.startsWith("node_modules/")) continue;
+	const parts = lockPath.slice("node_modules/".length).split("/");
+	const packageName = parts[0].startsWith("@") ? `${parts[0]}/${parts[1]}` : parts[0];
+	if (bundledPackageNames.has(packageName)) continue;
+
+	const source = join(repoRoot, lockPath);
+	if (!existsSync(source)) continue;
+	const target = join(codingAgentDir, lockPath);
+	rmSync(target, { force: true, recursive: true });
+	mkdirSync(dirname(target), { recursive: true });
+	copyRequired(source, target);
+}
+
+console.log("Prepared external runtime dependencies.");

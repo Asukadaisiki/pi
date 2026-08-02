@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-08-02
+
+### Fixed
+
+- Bundled all runtime dependencies so global npm installations start without missing shared workspace dependencies.
+
 ## [0.0.2] - 2026-08-02
 
 ### New Features

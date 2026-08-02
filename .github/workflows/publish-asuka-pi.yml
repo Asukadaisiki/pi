@@ -76,11 +76,9 @@ jobs:
       - name: Smoke-test packed asuka.pi
         shell: bash
         run: |
-          install_dir=$(mktemp -d)
-          cd "$install_dir"
-          npm init -y --ignore-scripts >/dev/null
-          npm install --omit=dev --ignore-scripts "$RUNNER_TEMP/${{ steps.pack.outputs.tarball }}"
-          ./node_modules/.bin/pi --help
+          install_prefix=$(mktemp -d)
+          npm install --global --prefix "$install_prefix" --ignore-scripts "$RUNNER_TEMP/${{ steps.pack.outputs.tarball }}"
+          "$install_prefix/bin/pi" --help
 
       - name: Upgrade npm for trusted publishing
         run: |

@@ -1,6 +1,6 @@
 {
 	"name": "asuka.pi",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
 	"type": "module",
 	"piConfig": {
@@ -70,11 +70,7 @@
 		"undici": "8.5.0",
 		"yaml": "2.9.0"
 	},
-	"bundledDependencies": [
-		"@earendil-works/pi-agent-core",
-		"@earendil-works/pi-ai",
-		"@earendil-works/pi-tui"
-	],
+	"bundledDependencies": true,
 	"overrides": {
 		"protobufjs": "7.6.5",
 		"rimraf": "6.1.2",
