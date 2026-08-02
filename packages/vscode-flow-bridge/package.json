@@ -1,0 +1,40 @@
+{
+	"name": "asuka-pi-flow-bridge",
+	"version": "0.0.1",
+	"private": true,
+	"displayName": "asuka.pi Flow Bridge",
+	"description": "Local VS Code semantic bridge for the native asuka.pi /flow command",
+	"license": "MIT",
+	"type": "module",
+	"main": "./dist/extension.cjs",
+	"engines": {
+		"vscode": "^1.96.0"
+	},
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"extensionKind": [
+		"workspace"
+	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "asukaPi.flowBridgeStatus",
+				"title": "asuka.pi: Show Flow Bridge Status"
+			}
+		]
+	},
+	"scripts": {
+		"clean": "shx rm -rf dist",
+		"build": "tsgo -p tsconfig.build.json --noEmit && esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --outfile=dist/extension.cjs",
+		"prepublishOnly": "npm run clean && npm run build"
+	},
+	"dependencies": {
+		"asuka.pi": "0.0.1"
+	},
+	"devDependencies": {
+		"@types/vscode": "1.96.0",
+		"esbuild": "0.28.1",
+		"shx": "0.4.0"
+	}
+}

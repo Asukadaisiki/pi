@@ -39,16 +39,16 @@ describe("version checks", () => {
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(checkForNewPiVersion("1.2.3")).resolves.toBeUndefined();
-		await expect(checkForNewPiVersion("1.2.2")).resolves.toEqual({ version: "1.2.3" });
+		await expect(checkForNewPiVersion("1.2.2")).resolves.toEqual({ packageName: "asuka.pi", version: "1.2.3" });
 	});
 
-	it("uses the pi.dev version check api with a pi user agent", async () => {
+	it("uses the asuka.pi npm registry metadata with a pi user agent", async () => {
 		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(getLatestPiVersion("1.2.3")).resolves.toBe("1.2.4");
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://pi.dev/api/latest-version",
+			"https://registry.npmjs.org/asuka.pi/latest",
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					"User-Agent": expect.stringMatching(/^pi\/1\.2\.3 /),
@@ -58,7 +58,7 @@ describe("version checks", () => {
 		);
 	});
 
-	it("returns the active package metadata from the version check api", async () => {
+	it("keeps self-updates on asuka.pi when registry metadata contains another package name", async () => {
 		const fetchMock = vi.fn(async () =>
 			Response.json({
 				packageName: "@new-scope/pi",
@@ -68,7 +68,7 @@ describe("version checks", () => {
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(getLatestPiRelease("1.2.3")).resolves.toEqual({
-			packageName: "@new-scope/pi",
+			packageName: "asuka.pi",
 			version: "1.2.4",
 		});
 	});
@@ -77,7 +77,11 @@ describe("version checks", () => {
 		const fetchMock = vi.fn(async () => Response.json({ note: " **Read this** ", version: "1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
-		await expect(getLatestPiRelease("1.2.3")).resolves.toEqual({ note: "**Read this**", version: "1.2.4" });
+		await expect(getLatestPiRelease("1.2.3")).resolves.toEqual({
+			note: "**Read this**",
+			packageName: "asuka.pi",
+			version: "1.2.4",
+		});
 	});
 
 	it("skips automatic api calls when version checks are disabled", async () => {

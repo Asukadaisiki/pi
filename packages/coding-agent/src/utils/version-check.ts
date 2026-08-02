@@ -1,7 +1,8 @@
 import { compare, valid } from "semver";
 import { getPiUserAgent } from "./pi-user-agent.ts";
 
-const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
+const UPDATE_PACKAGE_NAME = "asuka.pi";
+const LATEST_VERSION_URL = `https://registry.npmjs.org/${UPDATE_PACKAGE_NAME}/latest`;
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
 export interface LatestPiRelease {
@@ -50,12 +51,10 @@ export async function getLatestPiRelease(
 	if (typeof data.version !== "string" || !data.version.trim()) {
 		return undefined;
 	}
-	const packageName =
-		typeof data.packageName === "string" && data.packageName.trim() ? data.packageName.trim() : undefined;
 	const note = typeof data.note === "string" && data.note.trim() ? data.note.trim() : undefined;
 	return {
 		version: data.version.trim(),
-		packageName,
+		packageName: UPDATE_PACKAGE_NAME,
 		...(note ? { note } : {}),
 	};
 }

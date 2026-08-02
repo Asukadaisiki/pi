@@ -14,6 +14,7 @@ type SubmitContext = {
 		prompt: (text: string, options?: unknown) => Promise<void>;
 	};
 	flushPendingBashComponents: () => void;
+	handleFlowCommand: (query?: string) => Promise<void>;
 	onInputCallback?: (text: string) => void;
 	pendingUserInputs: string[];
 };
@@ -44,6 +45,7 @@ function createSubmitContext(): SubmitContext {
 			prompt: vi.fn(async () => {}),
 		},
 		flushPendingBashComponents: vi.fn(),
+		handleFlowCommand: vi.fn(async () => {}),
 		pendingUserInputs: [],
 	};
 }
@@ -67,6 +69,18 @@ describe("InteractiveMode startup input", () => {
 
 		await expect(interactiveModePrototype.getUserInput.call(context)).resolves.toBe("queued prompt");
 		expect(context.onInputCallback).toBeUndefined();
+		expect(context.pendingUserInputs).toEqual([]);
+	});
+
+	it("handles /flow locally without queuing an agent prompt", async () => {
+		const context = createSubmitContext();
+		context.session.isStreaming = true;
+		interactiveModePrototype.setupEditorSubmitHandler.call(context);
+
+		await context.defaultEditor.onSubmit?.(" /flow createAgentSession ");
+
+		expect(context.handleFlowCommand).toHaveBeenCalledWith("createAgentSession");
+		expect(context.session.prompt).not.toHaveBeenCalled();
 		expect(context.pendingUserInputs).toEqual([]);
 	});
 });

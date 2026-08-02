@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added native `/flow <symbol>` semantic symbol selection and exact VS Code source navigation through the local Flow Bridge companion.
+
+### Fixed
+
+- Kept `pi update` self-updates on the published `asuka.pi` package instead of following the upstream Pi package returned by `pi.dev`.
+
 ## [0.82.1] - 2026-07-25
 
 ### New Features

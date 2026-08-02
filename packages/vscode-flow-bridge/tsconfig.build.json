@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"module": "Node16",
+		"moduleResolution": "Node16",
+		"noEmit": true,
+		"rootDir": "./src",
+		"types": ["node", "vscode"],
+		"paths": {
+			"asuka.pi/flow-protocol": ["../coding-agent/dist/core/flow/protocol.d.ts"]
+		}
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+}

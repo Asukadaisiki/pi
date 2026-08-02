@@ -17,6 +17,8 @@ packages/ai/src/providers/.model-generation-*/
 
 # Editor files
 .vscode/
+!packages/vscode-flow-bridge/.vscode/
+!packages/vscode-flow-bridge/.vscode/launch.json
 .zed/
 .idea/
 .claude/

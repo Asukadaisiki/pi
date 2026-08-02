@@ -71,6 +71,8 @@ import type {
 	ProjectTrustContext,
 	WorkingIndicatorOptions,
 } from "../../core/extensions/index.ts";
+import { FlowBridgeClient } from "../../core/flow/bridge-client.ts";
+import type { FlowSymbolCandidate } from "../../core/flow/protocol.ts";
 import { FooterDataProvider, type ReadonlyFooterDataProvider } from "../../core/footer-data-provider.ts";
 import { configureHttpDispatcher, formatHttpIdleTimeoutMs } from "../../core/http-dispatcher.ts";
 import { type AppKeybinding, KeybindingsManager } from "../../core/keybindings.ts";
@@ -114,6 +116,7 @@ import { EarendilAnnouncementComponent } from "./components/earendil-announcemen
 import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionInputComponent } from "./components/extension-input.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
+import { FlowSymbolSelectorComponent } from "./components/flow-symbol-selector.ts";
 import { FooterComponent, formatTokens } from "./components/footer.ts";
 import { formatKeyText, keyDisplayText, keyHint, keyText, rawKeyHint } from "./components/keybinding-hints.ts";
 import { LoginDialogComponent } from "./components/login-dialog.ts";
@@ -2661,6 +2664,12 @@ export class InteractiveMode {
 				await this.handleModelCommand(searchTerm);
 				return;
 			}
+			if (text === "/flow" || text.startsWith("/flow ")) {
+				const query = text.startsWith("/flow ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				await this.handleFlowCommand(query);
+				return;
+			}
 			if (text === "/export" || text.startsWith("/export ")) {
 				await this.handleExportCommand(text);
 				this.editor.setText("");
@@ -4327,6 +4336,78 @@ export class InteractiveMode {
 		}
 
 		this.showModelSelector(searchTerm);
+	}
+
+	private async handleFlowCommand(query?: string): Promise<void> {
+		if (!query) {
+			this.showWarning("Usage: /flow <function-or-symbol-name>");
+			return;
+		}
+
+		const loader = new BorderedLoader(this.ui, theme, `FLOW  searching ${query}`);
+		let restored = false;
+		const restoreEditor = () => {
+			if (restored) return;
+			restored = true;
+			loader.dispose();
+			this.editorContainer.clear();
+			this.editorContainer.addChild(this.editor);
+			this.ui.setFocus(this.editor);
+			this.ui.requestRender();
+		};
+		loader.onAbort = restoreEditor;
+		this.editorContainer.clear();
+		this.editorContainer.addChild(loader);
+		this.ui.setFocus(loader);
+		this.ui.requestRender();
+
+		const client = new FlowBridgeClient(this.sessionManager.getCwd());
+		try {
+			const candidates = await client.searchSymbols(query, loader.signal);
+			if (loader.signal.aborted) return;
+			restoreEditor();
+			if (candidates.length === 0) {
+				this.showStatus(`No workspace symbols matched: ${query}`);
+				return;
+			}
+			this.showFlowSymbolSelector(query, candidates, client);
+		} catch (error) {
+			if (loader.signal.aborted || (error instanceof Error && error.name === "AbortError")) return;
+			restoreEditor();
+			this.showError(error instanceof Error ? error.message : String(error));
+		}
+	}
+
+	private showFlowSymbolSelector(
+		query: string,
+		candidates: readonly FlowSymbolCandidate[],
+		client: FlowBridgeClient,
+	): void {
+		this.showSelector((done) => {
+			const selector = new FlowSymbolSelectorComponent(
+				this.ui,
+				query,
+				candidates,
+				(candidate) => {
+					done();
+					void client
+						.openLocation(candidate.location)
+						.then(() => {
+							this.showStatus(
+								`Opened ${candidate.qualifiedName} at ${candidate.relativePath}:${candidate.location.range.start.line + 1}`,
+							);
+						})
+						.catch((error: unknown) => {
+							this.showError(error instanceof Error ? error.message : String(error));
+						});
+				},
+				() => {
+					done();
+					this.ui.requestRender();
+				},
+			);
+			return { component: selector, focus: selector };
+		});
 	}
 
 	private async findExactModelMatch(searchTerm: string): Promise<Model<any> | undefined> {

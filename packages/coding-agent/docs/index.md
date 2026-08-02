@@ -82,3 +82,4 @@ For the full first-run flow, see [Quickstart](quickstart.md).
 ## Development
 
 - [Development](development.md) - local setup, project structure, and debugging.
+- [Native Flow design](flow-design.md) - proposed symbol pipeline, terminal interaction, semantic bridge, session state, and Agent context integration.

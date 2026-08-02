@@ -17,6 +17,7 @@ export {
 	type FirstTimeSetupOptions,
 	type FirstTimeSetupResult,
 } from "./first-time-setup.ts";
+export { FlowSymbolSelectorComponent } from "./flow-symbol-selector.ts";
 export { FooterComponent } from "./footer.ts";
 export { keyHint, keyText, rawKeyHint } from "./keybinding-hints.ts";
 export { LoginDialogComponent } from "./login-dialog.ts";

@@ -39,6 +39,7 @@ Type `/` in the editor to open command completion. Extensions can register custo
 | `/login`, `/logout` | Manage OAuth or API-key credentials |
 | [`/llama`](llama-cpp.md) | Download, load, and unload llama.cpp router models |
 | `/model` | Switch models |
+| `/flow <symbol>` | Fuzzy-select a workspace symbol and open its exact source location in VS Code |
 | `/scoped-models` | Enable/disable models for Ctrl+P cycling |
 | `/settings` | Thinking level, theme, message delivery, transport |
 | `/resume` | Pick from previous sessions |
@@ -58,6 +59,14 @@ Type `/` in the editor to open command completion. Extensions can register custo
 | `/hotkeys` | Show all keyboard shortcuts |
 | `/changelog` | Display version history |
 | `/quit` | Quit pi |
+
+### Flow Symbol Navigation
+
+`/flow <symbol>` is a local interactive command. It does not become a user message and does not start an LLM turn. Pi asks the VS Code Flow Bridge for semantic workspace symbols, applies deterministic local ranking, and always shows a selector. Press Enter to open the selected definition in VS Code; press Escape to cancel.
+
+Phase 1 requires the `asuka.pi Flow Bridge` companion extension to be running in a local VS Code window opened on the same workspace. It deliberately does not fall back to grep when the bridge is unavailable. Remote SSH, WSL, containers, browser workspaces, graph rendering, and Flow session persistence are not supported yet.
+
+For the development-host setup and current scope, see `packages/vscode-flow-bridge/README.md` in the source repository. The complete staged design is documented in [Native Flow design](flow-design.md).
 
 ## Message Queue
 

@@ -18,6 +18,10 @@
 		},
 		"./rpc-entry": {
 			"import": "./dist/rpc-entry.js"
+		},
+		"./flow-protocol": {
+			"types": "./dist/core/flow/protocol.d.ts",
+			"import": "./dist/core/flow/protocol.js"
 		}
 	},
 	"files": [
