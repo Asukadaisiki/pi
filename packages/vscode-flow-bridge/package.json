@@ -1,6 +1,6 @@
 {
 	"name": "asuka-pi-flow-bridge",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"private": true,
 	"publisher": "asukadaisiki",
 	"displayName": "asuka.pi Flow Bridge",
@@ -37,7 +37,7 @@
 		"prepublishOnly": "npm run clean && npm run build"
 	},
 	"dependencies": {
-		"asuka.pi": "0.0.3"
+		"asuka.pi": "0.0.4"
 	},
 	"devDependencies": {
 		"@types/vscode": "1.96.0",
