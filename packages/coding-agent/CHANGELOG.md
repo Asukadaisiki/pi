@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `pi flow install` and `pi flow doctor` for offline VS Code Flow Bridge installation and workspace diagnostics.
+
+### Changed
+
+- Bundled the Flow Bridge VSIX with npm and standalone binary distributions and included it as a GitHub Release asset.
+
+### Fixed
+
+- Updated vulnerable transitive dependency chains used by glob matching, test tooling, and the sandbox example.
+
 ## [0.0.3] - 2026-08-02
 
 ### Fixed

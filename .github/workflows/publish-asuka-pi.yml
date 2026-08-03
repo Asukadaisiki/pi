@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
       - name: Build
         run: npm run build
 
@@ -57,7 +60,7 @@ jobs:
         run: npm run check
 
       - name: Test
-        continue-on-error: ${{ inputs.allow_test_failures }}
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_test_failures }}
         run: npm test
 
       - name: Prepare bundled fork packages

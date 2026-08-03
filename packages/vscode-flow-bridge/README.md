@@ -8,6 +8,17 @@ Phase 1 supports:
 - exact source opening through `window.showTextDocument`;
 - one bridge endpoint per local workspace folder.
 
+## Install
+
+Released `asuka.pi` npm packages and standalone binaries include the companion VSIX. Install it without a marketplace lookup, reload the VS Code window that contains the workspace, and verify the local pipe:
+
+```bash
+pi flow install
+pi flow doctor
+```
+
+Use `pi flow install --code code-insiders` when the preferred VS Code launcher is not `code`.
+
 ## Development
 
 Build the coding-agent package first so the shared protocol declarations exist, then open this directory as the VS Code workspace and press F5. The included launch configuration builds the bridge and starts an Extension Development Host on the monorepo root. Run `asuka.pi` from that same root in the development host terminal.

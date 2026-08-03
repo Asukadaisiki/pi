@@ -97,6 +97,7 @@ jobs:
           node scripts/generate-coding-agent-install-lock.mjs --check
           cp packages/coding-agent/install-lock/package.json release-assets/pi-coding-agent-install-package.json
           cp packages/coding-agent/install-lock/package-lock.json release-assets/pi-coding-agent-install-package-lock.json
+          cp packages/coding-agent/binaries/windows-x64/flow-bridge/asuka-pi-flow-bridge.vsix release-assets/
 
           cd packages/coding-agent/binaries
 
@@ -127,6 +128,7 @@ jobs:
             pi-windows-arm64.zip
             pi-coding-agent-install-package.json
             pi-coding-agent-install-package-lock.json
+            asuka-pi-flow-bridge.vsix
           )
           sha256sum "${release_assets[@]}" > SHA256SUMS
 
@@ -172,6 +174,7 @@ jobs:
             pi-windows-arm64.zip
             pi-coding-agent-install-package.json
             pi-coding-agent-install-package-lock.json
+            asuka-pi-flow-bridge.vsix
             SHA256SUMS
             RELEASE_NOTES.md
           )
@@ -202,6 +205,7 @@ jobs:
             pi-windows-arm64.zip
             pi-coding-agent-install-package.json
             pi-coding-agent-install-package-lock.json
+            asuka-pi-flow-bridge.vsix
             SHA256SUMS
           )
 

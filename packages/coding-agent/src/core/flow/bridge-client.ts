@@ -98,7 +98,7 @@ export class FlowBridgeClient {
 			contents = await fs.readFile(discoveryPath, "utf8");
 		} catch (error) {
 			throw new FlowBridgeUnavailableError(
-				"VS Code Flow bridge is not available for this workspace. Install or enable the asuka.pi Flow Bridge extension, then open the same workspace in VS Code.",
+				"VS Code Flow bridge is not available for this workspace. Run `pi flow doctor` to inspect it or `pi flow install` to install the bundled extension.",
 				{ cause: error },
 			);
 		}

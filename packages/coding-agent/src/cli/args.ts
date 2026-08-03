@@ -230,9 +230,11 @@ ${chalk.bold("Commands:")}
   ${APP_NAME} remove <source> [-l]      Remove extension source from settings
   ${APP_NAME} uninstall <source> [-l]   Alias for remove
   ${APP_NAME} update [source|self|pi]   Update pi, extensions, or model catalogs
+  ${APP_NAME} flow install             Install or update the bundled VS Code Flow Bridge
+  ${APP_NAME} flow doctor              Diagnose the VS Code Flow Bridge for this workspace
   ${APP_NAME} list                      List installed extensions from settings
   ${APP_NAME} config [-l]               Open TUI to enable/disable package resources (Tab switches scope)
-  ${APP_NAME} <command> --help          Show help for install/remove/uninstall/update/list/config
+  ${APP_NAME} <command> --help          Show help for install/remove/uninstall/update/flow/list/config
 
 ${chalk.bold("Options:")}
   --provider <name>              Provider name (default: config.json default)

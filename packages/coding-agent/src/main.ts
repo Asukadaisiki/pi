@@ -42,6 +42,7 @@ import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
+import { handleFlowCommand } from "./flow-cli.ts";
 import { runMigrations, showDeprecationWarnings } from "./migrations.ts";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.ts";
 import { initTheme, stopThemeWatcher } from "./modes/interactive/theme/theme.ts";
@@ -481,6 +482,10 @@ export async function main(args: string[], options?: MainOptions) {
 
 	if (process.platform === "win32") {
 		cleanupWindowsSelfUpdateQuarantine(getPackageDir());
+	}
+	if (await handleFlowCommand(args)) {
+		process.exit(process.exitCode ?? 0);
+		return;
 	}
 
 	const cwd = process.cwd();
