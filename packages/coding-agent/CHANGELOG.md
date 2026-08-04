@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated provider setup documentation and CLI help to describe the configured-provider architecture, exact endpoint URLs, retained catalogs, and current authentication surface.
+
 ## [0.0.4] - 2026-08-03
 
 ### Added

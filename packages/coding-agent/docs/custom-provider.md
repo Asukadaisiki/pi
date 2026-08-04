@@ -30,10 +30,10 @@ See these complete provider examples:
 
 ## Quick Reference
 
-Extensions can register either a complete pi-ai `Provider` or use the legacy provider-config form. Prefer a complete provider when custom authentication, filtering, refresh, or streaming behavior is required. Pi composes `models.json` overrides above registered native providers.
+Extensions can register either a complete pi-ai `Provider` or use the compatibility provider-config form. Prefer a complete provider when custom authentication, filtering, refresh, or streaming behavior is required. Pi composes `models.json` overrides above registered native providers.
 
 ```typescript
-import { createProvider, openAICompletionsApi } from "@earendil-works/pi-ai";
+import { createProvider, openAICompletionsApi } from "@earendil-works/pi-ai/compat";
 import type { ExtensionAPI } from "asuka.pi";
 
 export default function (pi: ExtensionAPI) {
@@ -61,8 +61,8 @@ export default function (pi: ExtensionAPI) {
     api: openAICompletionsApi()
   }));
 
-  // Legacy provider-config form:
-  // Override baseUrl for existing provider
+  // Compatibility provider-config form:
+  // Override baseUrl for a configured provider
   pi.registerProvider("anthropic", {
     baseUrl: "https://proxy.example.com"
   });
@@ -108,8 +108,8 @@ pi.registerProvider("openai", {
 });
 
 // Both baseUrl and headers
-pi.registerProvider("google", {
-  baseUrl: "https://ai-gateway.corp.com/google",
+pi.registerProvider("deepseek", {
+  baseUrl: "https://ai-gateway.corp.com/deepseek",
   headers: {
     "X-Corp-Auth": "$CORP_AUTH_TOKEN"  // env var or literal
   }
@@ -212,7 +212,7 @@ pi.registerProvider("my-llm", {
 pi.unregisterProvider("my-llm");
 ```
 
-Unregistering removes that provider's dynamic models, API key fallback, OAuth provider registration, and custom stream handler registrations. Any built-in models or provider behavior that were overridden are restored.
+Unregistering removes that provider's dynamic models, API key fallback, OAuth provider registration, and custom stream handler registrations. Any configured provider or extension behavior that was overridden is restored.
 
 Calls made after the initial extension load phase are applied immediately, so no `/reload` is required.
 
@@ -225,12 +225,8 @@ The `api` field determines which streaming implementation is used:
 | `anthropic-messages` | Anthropic Claude API and compatibles |
 | `openai-completions` | OpenAI Chat Completions API and compatibles |
 | `openai-responses` | OpenAI Responses API |
-| `azure-openai-responses` | Azure OpenAI Responses API |
-| `openai-codex-responses` | OpenAI Codex Responses API |
-| `mistral-conversations` | Mistral SDK Conversations/Chat streaming |
-| `google-generative-ai` | Google Generative AI API |
-| `google-vertex` | Google Vertex AI API |
-| `bedrock-converse-stream` | Amazon Bedrock Converse API |
+
+These are the three protocol implementations shipped by the configured-provider core. A compatibility registration may use another API string only when it also supplies `streamSimple`; a native `Provider` owns its stream implementation directly.
 
 Most OpenAI-compatible providers work with `openai-completions`. Use model-level `thinkingLevelMap` for model-specific thinking levels, and `compat` for provider quirks. The `xhigh` and `max` levels are opt-in, require non-null map entries, and may be separated by unsupported holes:
 
@@ -252,20 +248,17 @@ models: [{
     supportsReasoningEffort: true,
     maxTokensField: "max_tokens",   // instead of "max_completion_tokens"
     requiresToolResultName: true,   // tool results need name field
-    thinkingFormat: "qwen",        // top-level enable_thinking: true
+    thinkingFormat: "chat-template",
+    chatTemplateKwargs: { "thinking": { "$var": "thinking.enabled" } },
     cacheControlFormat: "anthropic" // Anthropic-style cache_control markers
   }
 }]
 ```
 
-Use `openrouter` for OpenRouter-style `reasoning: { effort }` controls. Use `together` for Together-style `reasoning: { enabled }` controls; with `supportsReasoningEffort`, it also sends `reasoning_effort`. Use `qwen-chat-template` for local Qwen-compatible servers that read `chat_template_kwargs.enable_thinking` and need `preserve_thinking`.
+Use `deepseek` for DeepSeek-style `thinking: { type }` plus `reasoning_effort`, `zai` for GLM-style `thinking: { type }`, and `chat-template` for servers that consume configured `chat_template_kwargs`.
 Use `cacheControlFormat: "anthropic"` for OpenAI-compatible providers that expose Anthropic-style prompt caching via `cache_control` on the system prompt, last tool definition, and last user, assistant, or tool-result text content.
 
-For Anthropic-compatible providers using `api: "anthropic-messages"`, set `compat.forceAdaptiveThinking: true` on models or providers whose upstream model requires adaptive thinking (`thinking.type: "adaptive"` plus `output_config.effort`). Built-in adaptive Claude models set this automatically. Set `compat.allowEmptySignature: true` only for providers that emit empty thinking signatures and expect `signature: ""` on replay.
-
-> Migration note: Mistral moved from `openai-completions` to `mistral-conversations`.
-> Use `mistral-conversations` for native Mistral models.
-> If you intentionally route Mistral-compatible/custom endpoints through `openai-completions`, set `compat` flags explicitly as needed.
+For Anthropic-compatible providers using `api: "anthropic-messages"`, set `compat.forceAdaptiveThinking: true` on models or providers whose upstream model requires adaptive thinking (`thinking.type: "adaptive"` plus `output_config.effort`). Bundled adaptive Claude models set this automatically. Set `compat.allowEmptySignature: true` only for providers that emit empty thinking signatures and expect `signature: ""` on replay.
 
 ### Auth Header
 
@@ -394,15 +387,13 @@ interface OAuthCredentials {
 
 ## Custom Streaming API
 
-For providers with non-standard APIs, implement `streamSimple`. Study the existing provider implementations before writing your own:
+For providers with non-standard APIs, implement `streamSimple` or register a complete native `Provider`. Study the retained protocol implementations before writing your own:
 
 **Reference implementations:**
-- [anthropic.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/providers/anthropic.ts) - Anthropic Messages API
-- [mistral.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/providers/mistral.ts) - Mistral Conversations API
-- [openai-completions.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/providers/openai-completions.ts) - OpenAI Chat Completions
-- [openai-responses.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/providers/openai-responses.ts) - OpenAI Responses API
-- [google.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/providers/google.ts) - Google Generative AI
-- [amazon-bedrock.ts](https://github.com/earendil-works/pi-mono/blob/main/packages/ai/src/providers/amazon-bedrock.ts) - AWS Bedrock
+- [`api/anthropic-messages.ts`](../../ai/src/api/anthropic-messages.ts) - Anthropic Messages API
+- [`api/openai-completions.ts`](../../ai/src/api/openai-completions.ts) - OpenAI Chat Completions
+- [`api/openai-responses.ts`](../../ai/src/api/openai-responses.ts) - OpenAI Responses API
+- [`providers/configured.ts`](../../ai/src/providers/configured.ts) - config-driven provider construction and protocol dispatch
 
 ### Stream Pattern
 
@@ -628,23 +619,15 @@ pi.registerProvider("my-provider", {
 
 ## Testing Your Implementation
 
-Test your provider against the same test suites used by built-in providers. Copy and adapt these test files from [packages/ai/test/](https://github.com/earendil-works/pi-mono/tree/main/packages/ai/test):
+Keep extension tests isolated from real provider credentials. Use a faux provider or local HTTP fixture and cover:
 
-| Test | Purpose |
-|------|---------|
-| `stream.test.ts` | Basic streaming, text output |
-| `tokens.test.ts` | Token counting and usage |
-| `abort.test.ts` | AbortSignal handling |
-| `empty.test.ts` | Empty/minimal responses |
-| `context-overflow.test.ts` | Context window limits |
-| `image-limits.test.ts` | Image input handling |
-| `unicode-surrogate.test.ts` | Unicode edge cases |
-| `tool-call-without-result.test.ts` | Tool call edge cases |
-| `image-tool-result.test.ts` | Images in tool results |
-| `total-tokens.test.ts` | Total token calculation |
-| `cross-provider-handoff.test.ts` | Context handoff between providers |
+- registration and unregistration;
+- model visibility and authentication state;
+- the complete stream event lifecycle, including abort and error termination;
+- text, thinking, tool-call, usage, and malformed-response handling used by the implementation;
+- `ModelRuntime -> AgentSession -> Agent` integration when the provider is intended for coding-agent sessions.
 
-Run tests with your provider/model pairs to verify compatibility.
+Relevant retained examples include `packages/ai/test/faux-provider.test.ts`, `packages/ai/test/configured-providers.test.ts`, protocol-specific tests under `packages/ai/test/`, and coding-agent's model-runtime test utilities. Run only the focused files you add or modify, then run `npm run check` from the repository root.
 
 ## Config Reference
 
@@ -744,10 +727,10 @@ interface ProviderModelConfig {
     requiresAssistantAfterToolResult?: boolean;
     requiresThinkingAsText?: boolean;
     requiresReasoningContentOnAssistantMessages?: boolean;
-    thinkingFormat?: "openai" | "openrouter" | "deepseek" | "together" | "zai" | "qwen" | "chat-template" | "qwen-chat-template" | "string-thinking" | "ant-ling";
+    thinkingFormat?: "openai" | "deepseek" | "zai" | "chat-template";
     chatTemplateKwargs?: Record<string, string | number | boolean | null | { "$var": "thinking.enabled" | "thinking.effort"; omitWhenOff?: boolean }>;
     cacheControlFormat?: "anthropic";
-    sessionAffinityFormat?: "openai" | "openai-nosession" | "openrouter";
+    sessionAffinityFormat?: "openai" | "openai-nosession";
     sendSessionAffinityHeaders?: boolean;
 
     // anthropic-messages
@@ -762,5 +745,5 @@ interface ProviderModelConfig {
 }
 ```
 
-`openrouter` sends `reasoning: { effort }`. `deepseek` sends `thinking: { type: "enabled" | "disabled" }` and `reasoning_effort` when enabled. `together` sends `reasoning: { enabled }` and also `reasoning_effort` when `supportsReasoningEffort` is enabled. `qwen` is for DashScope-style top-level `enable_thinking`. Use `qwen-chat-template` for local Qwen-compatible servers that read `chat_template_kwargs.enable_thinking` and need `preserve_thinking`. Use `chat-template` for configurable `chat_template_kwargs`, for example DeepSeek V3.x behind vLLM with `chatTemplateKwargs: { "thinking": { "$var": "thinking.enabled" } }`.
+`deepseek` sends `thinking: { type: "enabled" | "disabled" }` and `reasoning_effort` when enabled. `zai` sends GLM-style `thinking: { type }`. Use `chat-template` for configurable `chat_template_kwargs`, for example DeepSeek V3.x behind vLLM with `chatTemplateKwargs: { "thinking": { "$var": "thinking.enabled" } }`.
 `cacheControlFormat: "anthropic"` applies Anthropic-style `cache_control` markers to the system prompt, last tool definition, and last user, assistant, or tool-result text content.

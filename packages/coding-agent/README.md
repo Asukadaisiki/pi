@@ -74,18 +74,29 @@ Installer alternative:
 curl -fsSL https://pi.dev/install.sh | sh
 ```
 
-Authenticate with an API key:
+Create `~/.pi/agent/config.json` with a configured provider. The `url` value is the complete request endpoint:
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-pi
+```json
+{
+  "default": { "provider": "openai", "model": "gpt-5.5", "thinking": "high" },
+  "providers": {
+    "openai": {
+      "name": "OpenAI",
+      "vendor": "openai",
+      "protocol": "openai-responses",
+      "url": "https://api.openai.com/v1/responses",
+      "auth": { "type": "api-key", "env": ["OPENAI_API_KEY"] },
+      "modelCatalog": "openai"
+    }
+  }
+}
 ```
 
-Or use your existing subscription:
+Then set the configured credential and start pi:
 
 ```bash
+export OPENAI_API_KEY=sk-...
 pi
-/login  # Then select provider
 ```
 
 Then just talk to pi. By default, pi gives the model four tools: `read`, `write`, `edit`, and `bash`. The model uses these to fulfill your requests. Add capabilities via [skills](#skills), [prompt templates](#prompt-templates), [extensions](#extensions), or [pi packages](#pi-packages).
@@ -96,50 +107,13 @@ Then just talk to pi. By default, pi gives the model four tools: `read`, `write`
 
 ## Providers & Models
 
-For each built-in provider, pi maintains a list of tool-capable models. Configured provider catalogs refresh automatically; run `pi update --models` to force an immediate refresh. Authenticate via subscription (`/login`) or API key, then select any model from that provider via `/model` (or Ctrl+L).
+Pi constructs providers from `~/.pi/agent/config.json`. The bundled model catalogs cover Anthropic, DeepSeek, Moonshot/Kimi, OpenAI, and ZAI/GLM. Configured entries use one of three shared protocols: `anthropic-messages`, `openai-completions`, or `openai-responses`.
 
-**Subscriptions:**
-- Anthropic Claude Pro/Max
-- OpenAI ChatGPT Plus/Pro (Codex)
-- GitHub Copilot
+Authentication is also provider-owned. Declare token sources in `auth.env` or `auth.bearerEnv`, store an API key with `/login`, or pass `--api-key` for one run. The retained Claude vendor additionally exposes Claude Pro/Max OAuth when that provider is present in `config.json`.
 
-**API keys:**
-- Anthropic
-- Ant Ling
-- OpenAI
-- Azure OpenAI
-- DeepSeek
-- NVIDIA NIM
-- Google Gemini
-- Google Vertex
-- Amazon Bedrock
-- Mistral
-- Groq
-- Cerebras
-- Cloudflare AI Gateway
-- Cloudflare Workers AI
-- xAI
-- OpenRouter
-- Vercel AI Gateway
-- ZAI Coding Plan (Global)
-- ZAI Coding Plan (China)
-- OpenCode Zen
-- OpenCode Go
-- Hugging Face
-- Fireworks
-- Together AI
-- Kimi For Coding
-- MiniMax
-- Xiaomi MiMo
-- Xiaomi MiMo Token Plan (China)
-- Xiaomi MiMo Token Plan (Amsterdam)
-- Xiaomi MiMo Token Plan (Singapore)
+Use `/model` or Ctrl+L to select a configured model. See [docs/providers.md](docs/providers.md) for the complete configuration schema and current support boundary.
 
-Pi also supports the llama.cpp router server. Configure it with `/login llama.cpp`, manage downloads and loaded models with `/llama`, then select a loaded model with `/model`. See [docs/llama-cpp.md](docs/llama-cpp.md) for setup and usage.
-
-See [docs/providers.md](docs/providers.md) for other provider setup instructions.
-
-**Custom providers & models:** Add providers via `~/.pi/agent/models.json` if they speak a supported API (OpenAI, Anthropic, Google). For custom APIs or OAuth, use extensions. See [docs/models.md](docs/models.md) and [docs/custom-provider.md](docs/custom-provider.md).
+**Custom providers & models:** Use `~/.pi/agent/models.json` for model entries, compatibility overrides, or providers backed by a registered protocol. Use extensions for custom streaming or authentication behavior. See [docs/models.md](docs/models.md) and [docs/custom-provider.md](docs/custom-provider.md).
 
 ---
 
@@ -553,9 +527,9 @@ cat README.md | pi -p "Summarize this text"
 
 | Option | Description |
 |--------|-------------|
-| `--provider <name>` | Provider (anthropic, openai, google, etc.) |
+| `--provider <name>` | Provider ID declared in `config.json`, `models.json`, or an extension |
 | `--model <pattern>` | Model pattern or ID (supports `provider/id` and optional `:<thinking>`) |
-| `--api-key <key>` | API key (overrides env vars) |
+| `--api-key <key>` | API key override for the selected configured provider |
 | `--thinking <level>` | `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` |
 | `--models <patterns>` | Comma-separated patterns for Ctrl+P cycling |
 | `--list-models [search]` | List available models |
@@ -637,16 +611,16 @@ cat README.md | pi -p "Summarize this text"
 pi --name "release audit" -p "Audit this repository"
 
 # Different model
-pi --provider openai --model gpt-4o "Help me refactor"
+pi --provider openai --model gpt-5.5 "Help me refactor"
 
 # Model with provider prefix (no --provider needed)
-pi --model openai/gpt-4o "Help me refactor"
+pi --model openai/gpt-5.5 "Help me refactor"
 
 # Model with thinking level shorthand
-pi --model sonnet:high "Solve this complex problem"
+pi --model gpt-5.5:high "Solve this complex problem"
 
 # Limit model cycling
-pi --models "claude-*,gpt-4o"
+pi --models "gpt-5.5,deepseek-v4-flash,kimi-k2.6"
 
 # Read-only mode
 pi --tools read,grep,find,ls -p "Review the code"

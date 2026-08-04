@@ -39,32 +39,38 @@ cd /path/to/project
 pi
 ```
 
-## Authenticate
+## Configure a provider
 
-Pi can use subscription providers through `/login`, or API-key providers through environment variables or the auth file.
+Pi loads providers from `~/.pi/agent/config.json`. Each entry declares its vendor, protocol, complete request endpoint, authentication sources, and bundled model catalog.
 
-### Option 1: subscription login
+Create a minimal OpenAI configuration:
 
-Start pi and run:
-
-```text
-/login
+```json
+{
+  "default": { "provider": "openai", "model": "gpt-5.5", "thinking": "high" },
+  "providers": {
+    "openai": {
+      "name": "OpenAI",
+      "vendor": "openai",
+      "protocol": "openai-responses",
+      "url": "https://api.openai.com/v1/responses",
+      "auth": { "type": "api-key", "env": ["OPENAI_API_KEY"] },
+      "modelCatalog": "openai"
+    }
+  }
+}
 ```
 
-Then select a provider. Built-in subscription logins include Claude Pro/Max, ChatGPT Plus/Pro (Codex), and GitHub Copilot.
-
-### Option 2: API key
-
-Set an API key before launching pi:
+Set the declared API key before launching pi:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
 pi
 ```
 
-You can also run `/login` and select an API-key provider to store the key in `~/.pi/agent/auth.json`.
+You can also run `/login` to store an API key for a configured provider in `~/.pi/agent/auth.json`. A configured Claude provider additionally offers Claude Pro/Max OAuth.
 
-See [Providers](providers.md) for all supported providers, environment variables, and cloud-provider setup.
+See [Providers](providers.md) for the supported vendors and protocols, exact-endpoint semantics, and authentication precedence.
 
 ## First session
 

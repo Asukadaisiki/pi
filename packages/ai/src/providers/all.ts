@@ -47,7 +47,7 @@ export function builtinProviders(configurations?: ReadonlyMap<string, Configured
 	return [...configurations.values()].map(configuredProvider);
 }
 
-/** A `Models` collection with every built-in provider registered. */
+/** A `Models` collection with every explicitly configured provider registered. */
 export function builtinModels(
 	options?: CreateModelsOptions,
 	configurations?: ReadonlyMap<string, ConfiguredProviderConfig>,
