@@ -9,6 +9,7 @@
 ### Changed
 
 - Updated provider setup documentation and CLI help to describe the configured-provider architecture, exact endpoint URLs, retained catalogs, and current authentication surface.
+- GitHub Releases now publish Windows x64 and arm64 binaries only, while retaining the source archive, installer metadata, Flow Bridge VSIX, and checksums.
 
 ### Fixed
 

@@ -83,6 +83,8 @@ jobs:
           tar -xzf "release-assets/pi-${VERSION}-source.tar.gz" -C "${build_root}"
           "${build_root}/pi-${VERSION}/scripts/build-binaries.sh" \
             --offline-model-data \
+            --platform windows-x64 \
+            --platform windows-arm64 \
             --out "${GITHUB_WORKSPACE}/packages/coding-agent/binaries"
 
       - name: Prepare GitHub release payload
@@ -102,10 +104,6 @@ jobs:
           cd packages/coding-agent/binaries
 
           binary_assets=(
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
           )
@@ -120,10 +118,6 @@ jobs:
           source_asset="pi-${VERSION}-source.tar.gz"
           release_assets=(
             "${source_asset}"
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
             pi-coding-agent-install-package.json
@@ -166,10 +160,6 @@ jobs:
           source_asset="pi-${VERSION}-source.tar.gz"
           expected_assets=(
             "${source_asset}"
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
             pi-coding-agent-install-package.json
@@ -197,10 +187,6 @@ jobs:
           source_asset="pi-${VERSION}-source.tar.gz"
           release_assets=(
             "${source_asset}"
-            pi-darwin-arm64.tar.gz
-            pi-darwin-x64.tar.gz
-            pi-linux-x64.tar.gz
-            pi-linux-arm64.tar.gz
             pi-windows-x64.zip
             pi-windows-arm64.zip
             pi-coding-agent-install-package.json

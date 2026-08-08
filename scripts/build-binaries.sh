@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 #
-# Build pi binaries for all platforms locally.
+# Build pi binaries for selected platforms locally.
 # Mirrors .github/workflows/build-binaries.yml
 #
 # Usage:
-#   ./scripts/build-binaries.sh [--skip-install] [--skip-deps] [--skip-build] [--offline-model-data] [--platform <platform>] [--out <dir>]
+#   ./scripts/build-binaries.sh [--skip-install] [--skip-deps] [--skip-build] [--offline-model-data] [--platform <platform>]... [--out <dir>]
 #
 # Options:
 #   --skip-install       Skip npm ci
 #   --skip-deps          Skip installing cross-platform dependencies
 #   --skip-build         Skip the package build
 #   --offline-model-data Build with bundled model data instead of refreshing it
-#   --platform <name>    Build only for specified platform (darwin-arm64, darwin-x64, linux-x64, linux-arm64, windows-x64, windows-arm64)
+#   --platform <name>    Build for the specified platform; may be repeated (darwin-arm64, darwin-x64, linux-x64, linux-arm64, windows-x64, windows-arm64)
 #   --out <dir>          Output directory (default: packages/coding-agent/binaries)
 #
 # Output:
@@ -31,7 +31,7 @@ SKIP_INSTALL=false
 SKIP_DEPS=false
 SKIP_BUILD=false
 OFFLINE_MODEL_DATA=false
-PLATFORM=""
+PLATFORMS=()
 OUTPUT_DIR=""
 
 while [[ $# -gt 0 ]]; do
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --platform)
-            PLATFORM="$2"
+            PLATFORMS+=("$2")
             shift 2
             ;;
         --out)
@@ -67,18 +67,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate platform if specified
-if [[ -n "$PLATFORM" ]]; then
-    case "$PLATFORM" in
+# Validate platforms if specified
+for platform in "${PLATFORMS[@]}"; do
+    case "$platform" in
         darwin-arm64|darwin-x64|linux-x64|linux-arm64|windows-x64|windows-arm64)
             ;;
         *)
-            echo "Invalid platform: $PLATFORM"
+            echo "Invalid platform: $platform"
             echo "Valid platforms: darwin-arm64, darwin-x64, linux-x64, linux-arm64, windows-x64, windows-arm64"
             exit 1
             ;;
     esac
-fi
+done
 
 if [[ -z "$OUTPUT_DIR" ]]; then
     OUTPUT_DIR="packages/coding-agent/binaries"
@@ -133,9 +133,7 @@ rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"/{darwin-arm64,darwin-x64,linux-x64,linux-arm64,windows-x64,windows-arm64}
 
 # Determine which platforms to build
-if [[ -n "$PLATFORM" ]]; then
-    PLATFORMS=("$PLATFORM")
-else
+if [[ "${#PLATFORMS[@]}" -eq 0 ]]; then
     PLATFORMS=(darwin-arm64 darwin-x64 linux-x64 linux-arm64 windows-x64 windows-arm64)
 fi
 
