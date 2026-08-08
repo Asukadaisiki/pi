@@ -1,9 +1,7 @@
-name: Publish asuka.pi
+name: Publish asuka.pi (manual)
 
 on:
-  push:
-    tags:
-      - "v*"
+  # npm publication is intentionally manual while binary releases are Windows-only.
   workflow_dispatch:
     inputs:
       ref:

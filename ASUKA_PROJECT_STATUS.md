@@ -112,6 +112,7 @@ Phase 1 现在完成了“查找、直接调用关系投影、区分侧关系并
 - 发布脚本提高大体积打包输出的缓冲区，并验证大包内容。
 - GitHub Actions 增加显式 `allow_test_failures` 恢复参数；它只用于用户接受已知测试基线问题后的同版本恢复，不代表测试已经通过。
 - 当前发行策略暂时收敛为 Windows：`build-binaries.yml` 只构建并上传 `windows-x64`、`windows-arm64`，同时保留源码包、installer 元数据、Flow Bridge VSIX 与 SHA256 校验文件。
+- npm 不属于 Windows 二进制发行物；当前已移除 tag 对 npm 的自动发布，`publish-asuka-pi.yml` 仅保留手动发布入口。已推送的 `v0.0.5` 标签不改写，此策略从后续 tag 生效。
 
 ## 当前使用入口
 
