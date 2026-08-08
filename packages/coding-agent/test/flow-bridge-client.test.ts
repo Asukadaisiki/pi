@@ -48,6 +48,11 @@ function startFakeBridge(
 				if (!line) continue;
 				const message = JSON.parse(line) as Record<string, unknown>;
 				const id = typeof message.id === "string" ? message.id : "invalid";
+				const params = message.params;
+				const relationSymbol =
+					typeof params === "object" && params !== null && "symbol" in params
+						? (params as { symbol: FlowSymbolCandidate }).symbol
+						: candidates[0];
 				if (message.type === "hello") {
 					socket.write(
 						encodeFlowBridgeMessage({
@@ -66,7 +71,29 @@ function startFakeBridge(
 						type: "response",
 						id,
 						ok: true,
-						result: method === "searchSymbols" ? candidates : { opened: true },
+						result:
+							method === "ping"
+								? { ready: true }
+								: method === "searchSymbols"
+									? candidates
+									: method === "getSymbolRelations"
+										? {
+												anchor: relationSymbol,
+												incomingCalls: {
+													items: [{ node: relationSymbol, evidence: [relationSymbol.location] }],
+													total: 1,
+													truncated: false,
+												},
+												outgoingCalls: {
+													items: [{ node: relationSymbol, evidence: [relationSymbol.location] }],
+													total: 1,
+													truncated: false,
+												},
+												definitions: { items: [], total: 0, truncated: false },
+												implementations: { items: [], total: 0, truncated: false },
+												references: { items: [], total: 0, truncated: false },
+											}
+										: { opened: true },
 					}),
 				);
 			}
@@ -130,10 +157,15 @@ describe("FlowBridgeClient", () => {
 		await fs.writeFile(discoveryPath, JSON.stringify(discovery), "utf8");
 
 		const client = new FlowBridgeClient(workspaceRoot, { requestTimeoutMs: 2000 });
+		await client.ping();
 		const results = await client.searchSymbols("createAgentSession");
 		expect(results.map((result) => result.name)).toEqual(["createAgentSession", "createAgentSessionRuntime"]);
 
 		await client.openLocation(results[0]!.location);
-		expect(methods).toEqual(["searchSymbols", "openLocation"]);
+		const relations = await client.getSymbolRelations(results[0]!);
+		expect(relations.anchor.name).toBe("createAgentSession");
+		expect(relations.incomingCalls.total).toBe(1);
+		expect(relations.outgoingCalls.items[0]?.evidence[0]?.range.start.line).toBe(3);
+		expect(methods).toEqual(["ping", "searchSymbols", "openLocation", "getSymbolRelations"]);
 	});
 });

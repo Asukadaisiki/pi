@@ -1,6 +1,6 @@
 # Native Flow Design
 
-Status: Phase 1 implemented and verified in an Extension Development Host with an active language provider; Phases 2-4 proposed
+Status: Phase 1 implemented; direct Call Hierarchy requires live Extension Development Host acceptance; Phases 2-4 proposed
 
 This document specifies a native, read-only Flow capability for `asuka.pi`. Flow builds a task-scoped semantic graph around a selected symbol, renders it as an interactive terminal pipeline, observes code changes, and publishes a compact deterministic summary to the agent runtime.
 
@@ -90,6 +90,33 @@ Candidate rows show:
 - container name when the provider supplies one.
 
 The selector displays at most ten rows at once. It excludes symbols outside the active workspace and excludes dependency, generated, and build-output directories by default.
+
+The selected result is the definition anchor and is marked `[DEF]`. Flow then builds a bounded function-flow view from VS Code Call Hierarchy and keeps contract and reference relations as side branches:
+
+```text
+ FUNCTION FLOW  createAgentSession
+ outgoing calls 3  incoming calls 2  implementations 2  references 8
+ main spine: ▼ outgoing calls  ▲ incoming calls
+
+> [DEF] createAgentSession
+      @ packages/coding-agent/src/core/sdk.ts:169:17
+      ▼ outgoing calls
+      │
+      └─ [CALL] ModelRuntime.create
+         packages/coding-agent/src/core/runtime.ts:411:9
+         callsite packages/coding-agent/src/core/sdk.ts:181:12
+      ▲ incoming calls toward definition
+      │
+      └─ [CALLER] createSessionManager
+         packages/coding-agent/src/main.ts:246:12
+         callsite packages/coding-agent/src/main.ts:246:12
+      ◇ contract implementations
+      └─ [IMPL] packages/coding-agent/src/core/runtime.ts:411:9
+      · non-call references
+      └─ [REF] packages/coding-agent/src/main.ts:246:12
+```
+
+The vertical arrows carry call direction: `▼` moves from the selected function to its outgoing callees, while `▲` lists incoming callers toward the selected definition. `[CALL]` and `[CALLER]` are call-hierarchy nodes; the `callsite` line is the evidence range where the edge was found. `[IMPL]` and `[REF]` are side relations and never form the main function spine. This is a bounded direct-call view; recursive graph expansion, edit observation, graph diffs, and session persistence remain later work.
 
 Ranking is deterministic:
 

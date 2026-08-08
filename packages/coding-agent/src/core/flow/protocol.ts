@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-export const FLOW_BRIDGE_PROTOCOL_VERSION = 1;
+export const FLOW_BRIDGE_PROTOCOL_VERSION = 3;
 
 export interface FlowPosition {
 	line: number;
@@ -26,6 +26,40 @@ export interface FlowSymbolCandidate {
 	kind: string;
 	relativePath: string;
 	location: FlowLocation;
+}
+
+export type FlowSymbolRelationType = "definition" | "implementation" | "reference";
+
+export interface FlowSymbolRelation {
+	type: FlowSymbolRelationType;
+	relativePath: string;
+	location: FlowLocation;
+}
+
+export interface FlowSymbolRelationGroup {
+	items: FlowSymbolRelation[];
+	total: number;
+	truncated: boolean;
+}
+
+export interface FlowSymbolCall {
+	node: FlowSymbolCandidate;
+	evidence: FlowLocation[];
+}
+
+export interface FlowSymbolCallGroup {
+	items: FlowSymbolCall[];
+	total: number;
+	truncated: boolean;
+}
+
+export interface FlowSymbolRelations {
+	anchor: FlowSymbolCandidate;
+	incomingCalls: FlowSymbolCallGroup;
+	outgoingCalls: FlowSymbolCallGroup;
+	definitions: FlowSymbolRelationGroup;
+	implementations: FlowSymbolRelationGroup;
+	references: FlowSymbolRelationGroup;
 }
 
 export interface FlowBridgeDiscovery {
@@ -54,6 +88,13 @@ export interface FlowBridgeSearchSymbolsRequest {
 	};
 }
 
+export interface FlowBridgePingRequest {
+	type: "request";
+	id: string;
+	method: "ping";
+	params: Record<string, never>;
+}
+
 export interface FlowBridgeOpenLocationRequest {
 	type: "request";
 	id: string;
@@ -63,7 +104,20 @@ export interface FlowBridgeOpenLocationRequest {
 	};
 }
 
-export type FlowBridgeRequest = FlowBridgeSearchSymbolsRequest | FlowBridgeOpenLocationRequest;
+export interface FlowBridgeGetSymbolRelationsRequest {
+	type: "request";
+	id: string;
+	method: "getSymbolRelations";
+	params: {
+		symbol: FlowSymbolCandidate;
+	};
+}
+
+export type FlowBridgeRequest =
+	| FlowBridgePingRequest
+	| FlowBridgeSearchSymbolsRequest
+	| FlowBridgeOpenLocationRequest
+	| FlowBridgeGetSymbolRelationsRequest;
 export type FlowBridgeClientMessage = FlowBridgeHelloRequest | FlowBridgeRequest;
 
 export interface FlowBridgeHelloResponse {
@@ -116,6 +170,62 @@ export function isFlowSymbolCandidate(value: unknown): value is FlowSymbolCandid
 	);
 }
 
+function isFlowSymbolRelationType(value: unknown): value is FlowSymbolRelationType {
+	return value === "definition" || value === "implementation" || value === "reference";
+}
+
+export function isFlowSymbolRelation(value: unknown): value is FlowSymbolRelation {
+	return (
+		isRecord(value) &&
+		isFlowSymbolRelationType(value.type) &&
+		typeof value.relativePath === "string" &&
+		isFlowLocation(value.location)
+	);
+}
+
+export function isFlowSymbolRelationGroup(value: unknown): value is FlowSymbolRelationGroup {
+	return (
+		isRecord(value) &&
+		Array.isArray(value.items) &&
+		value.items.every(isFlowSymbolRelation) &&
+		isNonNegativeInteger(value.total) &&
+		typeof value.truncated === "boolean" &&
+		value.total >= value.items.length
+	);
+}
+
+export function isFlowSymbolCall(value: unknown): value is FlowSymbolCall {
+	return (
+		isRecord(value) &&
+		isFlowSymbolCandidate(value.node) &&
+		Array.isArray(value.evidence) &&
+		value.evidence.every(isFlowLocation)
+	);
+}
+
+export function isFlowSymbolCallGroup(value: unknown): value is FlowSymbolCallGroup {
+	return (
+		isRecord(value) &&
+		Array.isArray(value.items) &&
+		value.items.every(isFlowSymbolCall) &&
+		isNonNegativeInteger(value.total) &&
+		typeof value.truncated === "boolean" &&
+		value.total >= value.items.length
+	);
+}
+
+export function isFlowSymbolRelations(value: unknown): value is FlowSymbolRelations {
+	return (
+		isRecord(value) &&
+		isFlowSymbolCandidate(value.anchor) &&
+		isFlowSymbolCallGroup(value.incomingCalls) &&
+		isFlowSymbolCallGroup(value.outgoingCalls) &&
+		isFlowSymbolRelationGroup(value.definitions) &&
+		isFlowSymbolRelationGroup(value.implementations) &&
+		isFlowSymbolRelationGroup(value.references)
+	);
+}
+
 export function isFlowBridgeDiscovery(value: unknown): value is FlowBridgeDiscovery {
 	return (
 		isRecord(value) &&
@@ -146,8 +256,14 @@ export function isFlowBridgeClientMessage(value: unknown): value is FlowBridgeCl
 	if (value.method === "searchSymbols") {
 		return typeof value.params.query === "string";
 	}
+	if (value.method === "ping") {
+		return true;
+	}
 	if (value.method === "openLocation") {
 		return isFlowLocation(value.params.location);
+	}
+	if (value.method === "getSymbolRelations") {
+		return isFlowSymbolCandidate(value.params.symbol);
 	}
 	return false;
 }

@@ -2,9 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added a direct Call Hierarchy-based Function Flow view with incoming callers, outgoing callees, callsite evidence, and separate definition, implementation, and reference side relations.
+
 ### Changed
 
 - Updated provider setup documentation and CLI help to describe the configured-provider architecture, exact endpoint URLs, retained catalogs, and current authentication surface.
+
+### Fixed
+
+- Fixed Flow Bridge health checks timing out while the semantic language service was still loading.
 
 ## [0.0.4] - 2026-08-03
 

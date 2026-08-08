@@ -62,7 +62,15 @@ Type `/` in the editor to open command completion. Extensions can register custo
 
 ### Flow Symbol Navigation
 
-`/flow <symbol>` is a local interactive command. It does not become a user message and does not start an LLM turn. Pi asks the VS Code Flow Bridge for semantic workspace symbols, applies deterministic local ranking, and always shows a selector. Press Enter to open the selected definition in VS Code; press Escape to cancel.
+`/flow <symbol>` is a local interactive command. It does not become a user message and does not start an LLM turn. Pi asks the VS Code Flow Bridge for semantic workspace symbols, applies deterministic local ranking, and always shows a selector. Search results are marked `[DEF]` because they are definition anchors. After selecting one, Pi displays a direct function-flow view and separate contract/reference side relations:
+
+- `[CALL]` - a direct outgoing callee reported by VS Code Call Hierarchy;
+- `[CALLER]` - a direct incoming caller reported by VS Code Call Hierarchy;
+- `[DEF]` - the selected definition anchor, plus any additional definitions returned by VS Code;
+- `[IMPL]` - a location reported as implementing the anchor;
+- `[REF]` - a non-call location reported as referencing the anchor.
+
+The function-flow view uses a fixed vertical convention: `▼` points from the selected function toward outgoing callees, while `▲` lists incoming callers toward the definition. Each call row also shows a `callsite` evidence position. Contract and reference relations are side branches, not pipeline steps. Every row shows the workspace-relative path and exact line and column. Press Enter to open the selected symbol in VS Code; press Escape to close the view.
 
 Install the bundled `asuka.pi Flow Bridge` companion, reload the local VS Code window that contains the workspace, and verify the connection:
 
@@ -73,7 +81,7 @@ pi flow doctor
 
 Both commands are deterministic local operations and do not start an LLM turn. `flow install` invokes the detected VS Code CLI with the VSIX shipped inside the current pi installation. `flow doctor` checks the CLI, installed extension version, exact workspace discovery record, and authenticated local pipe connection. Pass `--code <command>` when using VS Code Insiders or a custom launcher.
 
-Phase 1 deliberately does not fall back to grep when the bridge is unavailable. Remote SSH, WSL, containers, browser workspaces, graph rendering, and Flow session persistence are not supported yet.
+Phase 1 deliberately does not fall back to grep when the bridge is unavailable. The function-flow view is a bounded direct Call Hierarchy projection, not a complete runtime trace: it does not prove dynamic dispatch, recursively expand the graph, observe edits, render topology changes, or persist Flow state. Remote SSH, WSL, containers, and browser workspaces are not supported yet.
 
 For the development-host setup and current scope, see `packages/vscode-flow-bridge/README.md` in the source repository. The complete staged design is documented in [Native Flow design](flow-design.md).
 

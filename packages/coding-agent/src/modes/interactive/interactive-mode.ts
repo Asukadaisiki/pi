@@ -116,6 +116,7 @@ import { EarendilAnnouncementComponent } from "./components/earendil-announcemen
 import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionInputComponent } from "./components/extension-input.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
+import { FlowSymbolRelationsViewComponent } from "./components/flow-relations-view.ts";
 import { FlowSymbolSelectorComponent } from "./components/flow-symbol-selector.ts";
 import { FooterComponent, formatTokens } from "./components/footer.ts";
 import { formatKeyText, keyDisplayText, keyHint, keyText, rawKeyHint } from "./components/keybinding-hints.ts";
@@ -4390,16 +4391,7 @@ export class InteractiveMode {
 				candidates,
 				(candidate) => {
 					done();
-					void client
-						.openLocation(candidate.location)
-						.then(() => {
-							this.showStatus(
-								`Opened ${candidate.qualifiedName} at ${candidate.relativePath}:${candidate.location.range.start.line + 1}`,
-							);
-						})
-						.catch((error: unknown) => {
-							this.showError(error instanceof Error ? error.message : String(error));
-						});
+					void this.showFlowRelations(query, candidate, client);
 				},
 				() => {
 					done();
@@ -4408,6 +4400,61 @@ export class InteractiveMode {
 			);
 			return { component: selector, focus: selector };
 		});
+	}
+
+	private async showFlowRelations(
+		query: string,
+		candidate: FlowSymbolCandidate,
+		client: FlowBridgeClient,
+	): Promise<void> {
+		const loader = new BorderedLoader(this.ui, theme, `FLOW  resolving ${candidate.qualifiedName}`);
+		let restored = false;
+		const restoreEditor = () => {
+			if (restored) return;
+			restored = true;
+			loader.dispose();
+			this.editorContainer.clear();
+			this.editorContainer.addChild(this.editor);
+			this.ui.setFocus(this.editor);
+			this.ui.requestRender();
+		};
+		loader.onAbort = restoreEditor;
+		this.editorContainer.clear();
+		this.editorContainer.addChild(loader);
+		this.ui.setFocus(loader);
+		this.ui.requestRender();
+
+		try {
+			const relations = await client.getSymbolRelations(candidate, loader.signal);
+			if (loader.signal.aborted) return;
+			loader.dispose();
+			const view = new FlowSymbolRelationsViewComponent(
+				this.ui,
+				query,
+				relations,
+				(location, label, relativePath) => {
+					void client
+						.openLocation(location)
+						.then(() => {
+							this.showStatus(
+								`Opened ${label} at ${relativePath}:${location.range.start.line + 1}:${location.range.start.character + 1}`,
+							);
+						})
+						.catch((error: unknown) => {
+							this.showError(error instanceof Error ? error.message : String(error));
+						});
+				},
+				restoreEditor,
+			);
+			this.editorContainer.clear();
+			this.editorContainer.addChild(view);
+			this.ui.setFocus(view);
+			this.ui.requestRender();
+		} catch (error) {
+			if (loader.signal.aborted || (error instanceof Error && error.name === "AbortError")) return;
+			restoreEditor();
+			this.showError(error instanceof Error ? error.message : String(error));
+		}
 	}
 
 	private async findExactModelMatch(searchTerm: string): Promise<Model<any> | undefined> {

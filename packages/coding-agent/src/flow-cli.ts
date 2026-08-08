@@ -48,7 +48,7 @@ function createDefaultRuntime(): FlowCommandRuntime {
 		},
 		probeBridge: async (workspaceRoot) => {
 			const client = new FlowBridgeClient(workspaceRoot, { requestTimeoutMs: 2000 });
-			await client.searchSymbols(`__asuka_pi_flow_doctor_${Date.now()}__`);
+			await client.ping();
 		},
 	};
 }

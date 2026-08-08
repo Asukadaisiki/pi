@@ -10,10 +10,12 @@ import {
 	type FlowBridgeResponse,
 	type FlowLocation,
 	type FlowSymbolCandidate,
+	type FlowSymbolRelations,
 	getFlowBridgeDiscoveryPath,
 	isFlowBridgeDiscovery,
 	isFlowBridgeServerMessage,
 	isFlowSymbolCandidate,
+	isFlowSymbolRelations,
 	normalizeFlowWorkspaceRoot,
 	parseFlowBridgeMessage,
 } from "./protocol.ts";
@@ -71,6 +73,26 @@ export class FlowBridgeClient {
 		return rankFlowSymbolCandidates(response.result, trimmedQuery);
 	}
 
+	async ping(signal?: AbortSignal): Promise<void> {
+		const response = await this.sendRequest(
+			{
+				type: "request",
+				id: randomUUID(),
+				method: "ping",
+				params: {},
+			},
+			signal,
+		);
+		if (
+			typeof response.result !== "object" ||
+			response.result === null ||
+			!("ready" in response.result) ||
+			response.result.ready !== true
+		) {
+			throw new Error("Flow bridge did not confirm readiness");
+		}
+	}
+
 	async openLocation(location: FlowLocation, signal?: AbortSignal): Promise<void> {
 		const response = await this.sendRequest(
 			{
@@ -89,6 +111,22 @@ export class FlowBridgeClient {
 		) {
 			throw new Error("Flow bridge did not confirm source navigation");
 		}
+	}
+
+	async getSymbolRelations(symbol: FlowSymbolCandidate, signal?: AbortSignal): Promise<FlowSymbolRelations> {
+		const response = await this.sendRequest(
+			{
+				type: "request",
+				id: randomUUID(),
+				method: "getSymbolRelations",
+				params: { symbol },
+			},
+			signal,
+		);
+		if (!isFlowSymbolRelations(response.result)) {
+			throw new Error("Flow bridge returned invalid symbol relations");
+		}
+		return response.result;
 	}
 
 	private async readDiscovery(): Promise<FlowBridgeDiscovery> {

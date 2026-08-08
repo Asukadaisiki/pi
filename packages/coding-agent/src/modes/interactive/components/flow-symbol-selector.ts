@@ -36,6 +36,7 @@ export class FlowSymbolSelectorComponent extends Container {
 				0,
 			),
 		);
+		this.addChild(new Text(theme.fg("dim", "  [DEF] search result is the definition anchor"), 1, 0));
 		this.addChild(new Spacer(1));
 		this.addChild(this.listContainer);
 		this.addChild(new Spacer(1));
@@ -93,7 +94,9 @@ export class FlowSymbolSelectorComponent extends Container {
 			const symbol = selected
 				? theme.fg("accent", candidate.qualifiedName)
 				: theme.fg("text", candidate.qualifiedName);
-			this.listContainer.addChild(new Text(`${marker} ${theme.fg("muted", kind)}${symbol}`, 1, 0));
+			this.listContainer.addChild(
+				new Text(`${marker} ${theme.fg("accent", "[DEF]")} ${theme.fg("muted", kind)}${symbol}`, 1, 0),
+			);
 			this.listContainer.addChild(
 				new Text(
 					theme.fg(

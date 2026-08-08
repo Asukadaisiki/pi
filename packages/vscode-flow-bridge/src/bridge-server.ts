@@ -174,8 +174,15 @@ export class FlowBridgeServer {
 
 	private async handleRequest(request: FlowBridgeRequest): Promise<FlowBridgeResponse> {
 		try {
+			if (request.method === "ping") {
+				return { type: "response", id: request.id, ok: true, result: { ready: true } };
+			}
 			if (request.method === "searchSymbols") {
 				const result = await this.semanticService.searchSymbols(request.params.query);
+				return { type: "response", id: request.id, ok: true, result };
+			}
+			if (request.method === "getSymbolRelations") {
+				const result = await this.semanticService.getSymbolRelations(request.params.symbol);
 				return { type: "response", id: request.id, ok: true, result };
 			}
 			await this.semanticService.openLocation(request.params.location);
